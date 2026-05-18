@@ -284,7 +284,7 @@ describe("TornadoChart", () => {
                 visualBuilder.updateFlushAllD3Transitions(dataView);
                 visualBuilder.updateRenderTimeout(dataView, async () => {
                     await delay(defaultAwaitTime);
-                    let columns: HTMLElement[] = Array.from(visualBuilder.columns[0].querySelectorAll("rect.column"));
+                    let columns: HTMLElement[] = Array.from(visualBuilder.columns[0].querySelectorAll("path.column"));
 
                     colors.forEach((color: string, index: number) => {
                         const doColumnContainColor: boolean = columns.some((element: HTMLElement) => {
@@ -432,6 +432,204 @@ describe("TornadoChart", () => {
                 });
             });
         });
+
+        describe("Negative bars", () => {
+            beforeEach(() => {
+                dataView.metadata.objects = {
+                    negativeBars: {
+                        show: true
+                    }
+                };
+            });
+
+            it("show", (done) => {
+                visualBuilder.updateRenderTimeout(dataView, () => {
+                    expect(dataView.metadata.objects!["negativeBars"].show).toBe(true);
+                    done();
+                });
+            });
+
+            it("fill", (done) => {
+                const color: string = "#AABB11";
+                (dataView.metadata.objects!).negativeBars.fill = getSolidColorStructuralObject(color);
+
+                visualBuilder.updateRenderTimeout(dataView, () => {
+                    expect(dataView.metadata.objects!["negativeBars"].fill).toBeDefined();
+                    done();
+                });
+            });
+
+            it("transparency", (done) => {
+                (dataView.metadata.objects!).negativeBars.transparency = 50;
+
+                visualBuilder.updateRenderTimeout(dataView, () => {
+                    expect(dataView.metadata.objects!["negativeBars"].transparency).toBe(50);
+                    done();
+                });
+            });
+
+            it("borderColor", (done) => {
+                const color: string = "#112233";
+                (dataView.metadata.objects!).negativeBars.borderColor = getSolidColorStructuralObject(color);
+
+                visualBuilder.updateRenderTimeout(dataView, () => {
+                    expect(dataView.metadata.objects!["negativeBars"].borderColor).toBeDefined();
+                    done();
+                });
+            });
+
+            it("borderWidth", (done) => {
+                (dataView.metadata.objects!).negativeBars.borderWidth = 5;
+
+                visualBuilder.updateRenderTimeout(dataView, () => {
+                    expect(dataView.metadata.objects!["negativeBars"].borderWidth).toBe(5);
+                    done();
+                });
+            });
+
+            it("cornerRadius", (done) => {
+                (dataView.metadata.objects!).negativeBars.cornerRadius = 10;
+
+                visualBuilder.updateRenderTimeout(dataView, () => {
+                    expect(dataView.metadata.objects!["negativeBars"].cornerRadius).toBe(10);
+                    done();
+                });
+            });
+        });
+
+        describe("Bar appearance", () => {
+            beforeEach(() => {
+                dataView.metadata.objects = {
+                    barAppearance: {}
+                };
+            });
+
+            it("borderColor", (done) => {
+                const color: string = "#CCDDEE";
+                (dataView.metadata.objects!).barAppearance.borderColor = getSolidColorStructuralObject(color);
+
+                visualBuilder.updateRenderTimeout(dataView, () => {
+                    expect(dataView.metadata.objects!["barAppearance"].borderColor).toBeDefined();
+                    done();
+                });
+            });
+
+            it("borderWidth", (done) => {
+                (dataView.metadata.objects!).barAppearance.borderWidth = 3;
+
+                visualBuilder.updateRenderTimeout(dataView, () => {
+                    expect(dataView.metadata.objects!["barAppearance"].borderWidth).toBe(3);
+                    done();
+                });
+            });
+
+            it("cornerRadius", (done) => {
+                (dataView.metadata.objects!).barAppearance.cornerRadius = 15;
+
+                visualBuilder.updateRenderTimeout(dataView, () => {
+                    expect(dataView.metadata.objects!["barAppearance"].cornerRadius).toBe(15);
+                    done();
+                });
+            });
+
+            it("barSpacing", (done) => {
+                (dataView.metadata.objects!).barAppearance.barSpacing = 25;
+
+                visualBuilder.updateRenderTimeout(dataView, () => {
+                    expect(dataView.metadata.objects!["barAppearance"].barSpacing).toBe(25);
+                    done();
+                });
+            });
+        });
+
+        describe("Center line", () => {
+            beforeEach(() => {
+                dataView.metadata.objects = {
+                    centerLine: {
+                        show: true
+                    }
+                };
+            });
+
+            it("show", (done) => {
+                visualBuilder.updateRenderTimeout(dataView, () => {
+                    expect(dataView.metadata.objects!["centerLine"].show).toBe(true);
+                    done();
+                });
+            });
+
+            it("color", (done) => {
+                const color: string = "#FF0000";
+                (dataView.metadata.objects!).centerLine.color = getSolidColorStructuralObject(color);
+
+                visualBuilder.updateRenderTimeout(dataView, () => {
+                    expect(dataView.metadata.objects!["centerLine"].color).toBeDefined();
+                    done();
+                });
+            });
+
+            it("width", (done) => {
+                (dataView.metadata.objects!).centerLine.width = 5;
+
+                visualBuilder.updateRenderTimeout(dataView, () => {
+                    expect(dataView.metadata.objects!["centerLine"].width).toBe(5);
+                    done();
+                });
+            });
+        });
+
+        describe("Chart area", () => {
+            beforeEach(() => {
+                dataView.metadata.objects = {
+                    chartArea: {
+                        show: true
+                    }
+                };
+            });
+
+            it("show", (done) => {
+                visualBuilder.updateRenderTimeout(dataView, () => {
+                    expect(dataView.metadata.objects!["chartArea"].show).toBe(true);
+                    done();
+                });
+            });
+
+            it("backgroundColor", (done) => {
+                const color: string = "#EEFFAA";
+                (dataView.metadata.objects!).chartArea.backgroundColor = getSolidColorStructuralObject(color);
+
+                visualBuilder.updateRenderTimeout(dataView, () => {
+                    expect(dataView.metadata.objects!["chartArea"].backgroundColor).toBeDefined();
+                    done();
+                });
+            });
+        });
+
+        describe("Category axis", () => {
+            beforeEach(() => {
+                dataView.metadata.objects = {
+                    categoryAxis: {}
+                };
+            });
+
+            it("normalize", (done) => {
+                (dataView.metadata.objects!).categoryAxis.normalize = true;
+
+                visualBuilder.updateRenderTimeout(dataView, () => {
+                    expect(dataView.metadata.objects!["categoryAxis"].normalize).toBe(true);
+                    done();
+                });
+            });
+
+            it("end", (done) => {
+                (dataView.metadata.objects!).categoryAxis.end = 100;
+
+                visualBuilder.updateRenderTimeout(dataView, () => {
+                    expect(dataView.metadata.objects!["categoryAxis"].end).toBe(100);
+                    done();
+                });
+            });
+        });
     });
 
     describe("Highligh test", () => {
@@ -487,7 +685,7 @@ describe("TornadoChart", () => {
             visualBuilder.visualHost.colorPalette.foreground = { value: foregroundColor };
 
             visualBuilder.updateRenderTimeout(dataView, () => {
-                columns = Array.from(visualBuilder.columns[0].querySelectorAll("rect.column"));
+                columns = Array.from(visualBuilder.columns[0].querySelectorAll("path.column"));
             });
         });
 

@@ -10,7 +10,7 @@ import NumericTextSubSelectionStyles = powerbi.visuals.NumericTextSubSelectionSt
 
 import ILocalizationManager = powerbi.extensibility.ILocalizationManager;
 
-import { categoriesReferences, dataPointReferences, labelsReference, legendReferences } from "./references";
+import { categoriesReferences, dataPointReferences, labelsReference, legendReferences, negativeBarsReferences, barAppearanceReferences, centerLineReferences, chartAreaReferences, categoryAxisReferences } from "./references";
 import { IFontReference } from "./interfaces";
 
 export class SubSelectionStylesService {
@@ -103,6 +103,66 @@ export class SubSelectionStylesService {
         };
 
         return textStyles;
+    }
+
+    public static GetNegativeBarsStyles(localizationManager: ILocalizationManager): SubSelectionStyles {
+        return {
+            type: SubSelectionStylesType.Shape,
+            fill: {
+                reference: {
+                    ...negativeBarsReferences.fill
+                },
+                label: localizationManager.getDisplayName("Visual_Fill")
+            },
+        };
+    }
+
+    public static GetBarAppearanceStyles(localizationManager: ILocalizationManager): SubSelectionStyles {
+        return {
+            type: SubSelectionStylesType.Shape,
+            fill: {
+                reference: {
+                    ...barAppearanceReferences.borderColor
+                },
+                label: localizationManager.getDisplayName("Visual_BorderColor")
+            },
+        };
+    }
+
+    public static GetCenterLineStyles(localizationManager: ILocalizationManager): SubSelectionStyles {
+        return {
+            type: SubSelectionStylesType.Shape,
+            fill: {
+                reference: {
+                    ...centerLineReferences.color
+                },
+                label: localizationManager.getDisplayName("Visual_Color")
+            },
+        };
+    }
+
+    public static GetChartAreaStyles(localizationManager: ILocalizationManager): SubSelectionStyles {
+        return {
+            type: SubSelectionStylesType.Shape,
+            fill: {
+                reference: {
+                    ...chartAreaReferences.backgroundColor
+                },
+                label: localizationManager.getDisplayName("Visual_BackgroundColor")
+            },
+        };
+    }
+
+    public static GetCategoryAxisStyles(localizationManager: ILocalizationManager): SubSelectionStyles {
+        return {
+            type: SubSelectionStylesType.Shape,
+            fill: {
+                reference: {
+                    ...categoryAxisReferences.normalize
+                },
+                label: localizationManager.getDisplayName("Visual_Axis_Normalize")
+            },
+        };
     }
 }
 
@@ -223,6 +283,11 @@ export class SubSelectionShortcutsService {
                 type: VisualShortcutType.Navigate,
                 destinationInfo: { cardUid: dataPointReferences.cardUid },
                 label: localizationManager.getDisplayName("Visual_OnObject_FormatDataColors")
+            },
+            {
+                type: VisualShortcutType.Navigate,
+                destinationInfo: { cardUid: barAppearanceReferences.cardUid },
+                label: localizationManager.getDisplayName("Visual_BarAppearance")
             }
         ];
     }
@@ -254,6 +319,122 @@ export class SubSelectionShortcutsService {
                 type: VisualShortcutType.Navigate,
                 destinationInfo: { cardUid: labelsReference.cardUid },
                 label: localizationManager.getDisplayName("Visual_OnObject_FormatLabels")
+            }
+        ];
+    }
+
+    public static GetNegativeBarsShortcuts(localizationManager: ILocalizationManager): VisualSubSelectionShortcuts {
+        return [
+            {
+                type: VisualShortcutType.Toggle,
+                ...negativeBarsReferences.show,
+                disabledLabel: localizationManager.getDisplayName("Visual_OnObject_Delete")
+            },
+            {
+                type: VisualShortcutType.Divider,
+            },
+            {
+                type: VisualShortcutType.Reset,
+                relatedResetFormattingIds: [
+                    negativeBarsReferences.fill,
+                    negativeBarsReferences.transparency,
+                    negativeBarsReferences.borderColor,
+                    negativeBarsReferences.borderWidth,
+                    negativeBarsReferences.cornerRadius,
+                    negativeBarsReferences.show
+                ]
+            },
+            {
+                type: VisualShortcutType.Navigate,
+                destinationInfo: { cardUid: negativeBarsReferences.cardUid },
+                label: localizationManager.getDisplayName("Visual_NegativeBars")
+            }
+        ];
+    }
+
+    public static GetBarAppearanceShortcuts(localizationManager: ILocalizationManager): VisualSubSelectionShortcuts {
+        return [
+            {
+                type: VisualShortcutType.Reset,
+                relatedResetFormattingIds: [
+                    barAppearanceReferences.borderColor,
+                    barAppearanceReferences.borderWidth,
+                    barAppearanceReferences.cornerRadius,
+                    barAppearanceReferences.barSpacing
+                ]
+            },
+            {
+                type: VisualShortcutType.Navigate,
+                destinationInfo: { cardUid: barAppearanceReferences.cardUid },
+                label: localizationManager.getDisplayName("Visual_BarAppearance")
+            }
+        ];
+    }
+
+    public static GetCenterLineShortcuts(localizationManager: ILocalizationManager): VisualSubSelectionShortcuts {
+        return [
+            {
+                type: VisualShortcutType.Toggle,
+                ...centerLineReferences.show,
+                disabledLabel: localizationManager.getDisplayName("Visual_OnObject_Delete")
+            },
+            {
+                type: VisualShortcutType.Divider,
+            },
+            {
+                type: VisualShortcutType.Reset,
+                relatedResetFormattingIds: [
+                    centerLineReferences.color,
+                    centerLineReferences.width,
+                    centerLineReferences.show
+                ]
+            },
+            {
+                type: VisualShortcutType.Navigate,
+                destinationInfo: { cardUid: centerLineReferences.cardUid },
+                label: localizationManager.getDisplayName("Visual_CenterLine")
+            }
+        ];
+    }
+
+    public static GetChartAreaShortcuts(localizationManager: ILocalizationManager): VisualSubSelectionShortcuts {
+        return [
+            {
+                type: VisualShortcutType.Toggle,
+                ...chartAreaReferences.show,
+                disabledLabel: localizationManager.getDisplayName("Visual_OnObject_Delete")
+            },
+            {
+                type: VisualShortcutType.Divider,
+            },
+            {
+                type: VisualShortcutType.Reset,
+                relatedResetFormattingIds: [
+                    chartAreaReferences.backgroundColor,
+                    chartAreaReferences.show
+                ]
+            },
+            {
+                type: VisualShortcutType.Navigate,
+                destinationInfo: { cardUid: chartAreaReferences.cardUid },
+                label: localizationManager.getDisplayName("Visual_ChartArea")
+            }
+        ];
+    }
+
+    public static GetCategoryAxisShortcuts(localizationManager: ILocalizationManager): VisualSubSelectionShortcuts {
+        return [
+            {
+                type: VisualShortcutType.Reset,
+                relatedResetFormattingIds: [
+                    categoryAxisReferences.normalize,
+                    categoryAxisReferences.end
+                ]
+            },
+            {
+                type: VisualShortcutType.Navigate,
+                destinationInfo: { cardUid: categoryAxisReferences.cardUid },
+                label: localizationManager.getDisplayName("Visual_XAxis")
             }
         ];
     }

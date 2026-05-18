@@ -55,6 +55,16 @@ export class TornadoOnObjectService implements VisualOnObjectFormatting {
                     return SubSelectionStylesService.GetDataPointStyles(subSelections, this.localizationManager);
                 case TornadoObjectNames.Labels:
                     return SubSelectionStylesService.GetLabelsStyles();
+                case TornadoObjectNames.NegativeBars:
+                    return SubSelectionStylesService.GetNegativeBarsStyles(this.localizationManager);
+                case TornadoObjectNames.BarAppearance:
+                    return SubSelectionStylesService.GetBarAppearanceStyles(this.localizationManager);
+                case TornadoObjectNames.CenterLine:
+                    return SubSelectionStylesService.GetCenterLineStyles(this.localizationManager);
+                case TornadoObjectNames.ChartArea:
+                    return SubSelectionStylesService.GetChartAreaStyles(this.localizationManager);
+                case TornadoObjectNames.CategoryAxis:
+                    return SubSelectionStylesService.GetCategoryAxisStyles(this.localizationManager);
             }
         }
     }
@@ -73,6 +83,16 @@ export class TornadoOnObjectService implements VisualOnObjectFormatting {
                     return SubSelectionShortcutsService.GetDataPointShortcuts(subSelections, this.localizationManager);
                 case TornadoObjectNames.Labels:
                     return SubSelectionShortcutsService.GetLabelsShortcuts(this.localizationManager);
+                case TornadoObjectNames.NegativeBars:
+                    return SubSelectionShortcutsService.GetNegativeBarsShortcuts(this.localizationManager);
+                case TornadoObjectNames.BarAppearance:
+                    return SubSelectionShortcutsService.GetBarAppearanceShortcuts(this.localizationManager);
+                case TornadoObjectNames.CenterLine:
+                    return SubSelectionShortcutsService.GetCenterLineShortcuts(this.localizationManager);
+                case TornadoObjectNames.ChartArea:
+                    return SubSelectionShortcutsService.GetChartAreaShortcuts(this.localizationManager);
+                case TornadoObjectNames.CategoryAxis:
+                    return SubSelectionShortcutsService.GetCategoryAxisShortcuts(this.localizationManager);
             }
         }
     }
