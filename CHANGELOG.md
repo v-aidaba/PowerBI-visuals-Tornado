@@ -1,7 +1,7 @@
 ## 3.2.0.0
 ### New Features
-* Added bar formatting options: border, corner radius, and inner padding
-* Added center line customization (visibility, color, width, style)
+* Added bar formatting options: border, corner radius, and spacing between bars
+* Added center line customization (visibility, color, width)
 * Added chart area background fill with toggle
 * Added negative bar color customization (independent from positive bars)
 * Added axis normalization option to scale both sides to 100%

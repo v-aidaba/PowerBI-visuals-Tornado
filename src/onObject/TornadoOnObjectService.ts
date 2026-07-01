@@ -63,8 +63,6 @@ export class TornadoOnObjectService implements VisualOnObjectFormatting {
                     return SubSelectionStylesService.GetCenterLineStyles(this.localizationManager);
                 case TornadoObjectNames.ChartArea:
                     return SubSelectionStylesService.GetChartAreaStyles(this.localizationManager);
-                case TornadoObjectNames.CategoryAxis:
-                    return SubSelectionStylesService.GetCategoryAxisStyles(this.localizationManager);
             }
         }
     }

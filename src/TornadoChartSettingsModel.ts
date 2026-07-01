@@ -69,7 +69,7 @@ class NegativeBarsCardSettings extends Card {
         name: "show",
         displayName: "Show",
         displayNameKey: "Visual_Show",
-        value: false
+        value: true
     });
 
     topLevelSlice? = this.show;

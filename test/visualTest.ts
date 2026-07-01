@@ -440,11 +440,29 @@ describe("TornadoChart", () => {
                         show: true
                     }
                 };
+                // Ensure at least one negative value exists so negative-bar styling can be verified
+                (<number[]>dataView.categorical!.values![0].values)[0] = -500;
             });
 
             it("show", (done) => {
                 visualBuilder.updateRenderTimeout(dataView, () => {
                     expect(dataView.metadata.objects!["negativeBars"].show).toBe(true);
+                    // Negative bars are rendered, so all columns remain present
+                    const renderedWhenShown: number = visualBuilder.columns.length;
+                    expect(renderedWhenShown).toBeGreaterThan(0);
+                    done();
+                });
+            });
+
+            it("hidden when show is off", (done) => {
+                const shownCount: number = (<number[]>dataView.categorical!.values![0].values)
+                    .concat(<number[]>dataView.categorical!.values![1].values).length;
+
+                (dataView.metadata.objects!).negativeBars.show = false;
+
+                visualBuilder.updateRenderTimeout(dataView, () => {
+                    // Hiding negative bars should render fewer columns than the total data points
+                    expect(visualBuilder.columns.length).toBeLessThan(shownCount);
                     done();
                 });
             });
@@ -464,6 +482,10 @@ describe("TornadoChart", () => {
 
                 visualBuilder.updateRenderTimeout(dataView, () => {
                     expect(dataView.metadata.objects!["negativeBars"].transparency).toBe(50);
+                    // At least one negative column should have its fill-opacity reduced to 0.5
+                    const opacities: string[] = Array.from(visualBuilder.columns)
+                        .map((element: Element) => getComputedStyle(element).getPropertyValue("fill-opacity"));
+                    expect(opacities).toContain("0.5");
                     done();
                 });
             });
@@ -474,6 +496,11 @@ describe("TornadoChart", () => {
 
                 visualBuilder.updateRenderTimeout(dataView, () => {
                     expect(dataView.metadata.objects!["negativeBars"].borderColor).toBeDefined();
+                    // At least one negative column should use the configured border color as its stroke
+                    const strokeMatches: boolean = Array.from(visualBuilder.columns)
+                        .some((element: Element) => areColorsEqual(
+                            getComputedStyle(element).getPropertyValue("stroke"), color));
+                    expect(strokeMatches).toBe(true);
                     done();
                 });
             });
@@ -483,6 +510,10 @@ describe("TornadoChart", () => {
 
                 visualBuilder.updateRenderTimeout(dataView, () => {
                     expect(dataView.metadata.objects!["negativeBars"].borderWidth).toBe(5);
+                    // At least one negative column should render with the configured border width
+                    const widthMatches: boolean = Array.from(visualBuilder.columns)
+                        .some((element: Element) => getComputedStyle(element).getPropertyValue("stroke-width") === "5px");
+                    expect(widthMatches).toBe(true);
                     done();
                 });
             });
@@ -554,6 +585,18 @@ describe("TornadoChart", () => {
             it("show", (done) => {
                 visualBuilder.updateRenderTimeout(dataView, () => {
                     expect(dataView.metadata.objects!["centerLine"].show).toBe(true);
+                    // Center line should be rendered in the DOM when enabled
+                    expect(visualBuilder.axis.length).toBeGreaterThan(0);
+                    done();
+                });
+            });
+
+            it("hidden when show is off", (done) => {
+                (dataView.metadata.objects!).centerLine.show = false;
+
+                visualBuilder.updateRenderTimeout(dataView, () => {
+                    // No center line elements should be rendered when disabled
+                    expect(visualBuilder.axis.length).toBe(0);
                     done();
                 });
             });
@@ -564,6 +607,10 @@ describe("TornadoChart", () => {
 
                 visualBuilder.updateRenderTimeout(dataView, () => {
                     expect(dataView.metadata.objects!["centerLine"].color).toBeDefined();
+                    // The rendered center line stroke should match the configured color
+                    Array.from(visualBuilder.axis).forEach((element: Element) => {
+                        assertColorsMatch(getComputedStyle(element).getPropertyValue("stroke"), color);
+                    });
                     done();
                 });
             });
@@ -573,6 +620,10 @@ describe("TornadoChart", () => {
 
                 visualBuilder.updateRenderTimeout(dataView, () => {
                     expect(dataView.metadata.objects!["centerLine"].width).toBe(5);
+                    // The rendered center line stroke-width should match the configured width
+                    Array.from(visualBuilder.axis).forEach((element: Element) => {
+                        expect(getComputedStyle(element).getPropertyValue("stroke-width")).toBe("5px");
+                    });
                     done();
                 });
             });
@@ -600,6 +651,10 @@ describe("TornadoChart", () => {
 
                 visualBuilder.updateRenderTimeout(dataView, () => {
                     expect(dataView.metadata.objects!["chartArea"].backgroundColor).toBeDefined();
+                    // The background rect fill should match the configured color when shown
+                    assertColorsMatch(
+                        getComputedStyle(visualBuilder.chartAreaBackground).getPropertyValue("fill"),
+                        color);
                     done();
                 });
             });

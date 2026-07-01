@@ -194,7 +194,7 @@ export class TornadoChart implements IVisual {
             const seriesValues = <number[]>values[s].values;
             seriesMinMax.push({
                 min: Math.min(min(seriesValues), 0),
-                max: max(seriesValues)
+                max: Math.max(max(seriesValues), 0)
             });
         }
         
@@ -492,10 +492,9 @@ export class TornadoChart implements IVisual {
 
     private get centerLineOffset(): number {
         const showCenterLine = this.formattingSettings?.centerLine?.show?.value ?? true;
-        const hasColor = !!this.formattingSettings?.centerLine?.color?.value?.value;
         const lineWidth = this.formattingSettings?.centerLine?.width?.value ?? 1;
         
-        if (this.dataView?.series?.length === TornadoChart.MaxSeries && showCenterLine && hasColor) {
+        if (this.dataView?.series?.length === TornadoChart.MaxSeries && showCenterLine) {
             return lineWidth / 2;
         }
         return 0;
@@ -857,10 +856,10 @@ export class TornadoChart implements IVisual {
     }
 
     private renderColumns(columnsData: TornadoChartPoint[], isFormatMode: boolean): void {  
-        // Filter out negative values if negative bars are disabled
+        // Hide negative bars when the negative bars toggle is turned off
         const showNegativeBars = this.formattingSettings?.negativeBars?.show?.value ?? true;
-        const filteredColumnsData = showNegativeBars 
-            ? columnsData 
+        const filteredColumnsData = showNegativeBars
+            ? columnsData
             : columnsData.filter(p => p.value >= 0);
 
         const columnsSelection: Selection<any> = this.columns
@@ -994,7 +993,7 @@ export class TornadoChart implements IVisual {
 
         const fontSize: number = this.formattingSettings.dataLabels.labelsValuesGroup.font.fontSize.value;
         const selectedFlags: number = Number(this.formattingSettings.dataLabels.labelsOptionsGroup.displayFormat?.value ?? 1);
-        const precision: number = this.formattingSettings.dataLabels.labelsValuesGroup.labelPrecision.value;
+        const precision: number = TornadoChart.getPrecision(this.formattingSettings.dataLabels);
 
         let dx: number,
             color: string = this.formattingSettings.dataLabels.labelsValuesGroup.insideFill.value.value || this.themeBackgroundColor;

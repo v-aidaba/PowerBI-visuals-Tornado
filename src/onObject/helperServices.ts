@@ -152,18 +152,6 @@ export class SubSelectionStylesService {
             },
         };
     }
-
-    public static GetCategoryAxisStyles(localizationManager: ILocalizationManager): SubSelectionStyles {
-        return {
-            type: SubSelectionStylesType.Shape,
-            fill: {
-                reference: {
-                    ...categoryAxisReferences.normalize
-                },
-                label: localizationManager.getDisplayName("Visual_Axis_Normalize")
-            },
-        };
-    }
 }
 
 export class SubSelectionShortcutsService {

@@ -34,7 +34,7 @@
     "Visual_HighlightedValueDisplayName": "Highlighted",
     "Visual_Label": "Label",
     "Visual_Labels": "Labels",
-    "Visual_LabelColor":"Label Color",
+    "Visual_LabelColor": "Label Color",
     "Visual_FontControl": "Font control",
     "Visual_Position": "Position",
     "Visual_Short_Description": "Comparing the relative importance of variables between two groups",

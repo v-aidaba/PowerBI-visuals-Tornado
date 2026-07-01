@@ -76,6 +76,10 @@ export class TornadoChartBuilder extends VisualBuilderBase<VisualClass> {
         return this.scrollable[0].querySelectorAll("g.axes > line.axis");
     }
 
+    public get chartAreaBackground(): SVGElement {
+        return this.mainElement.querySelector("rect.chartAreaBackground")!;
+    }
+
     public get column(): HTMLElement {
         return this.scrollable[0].querySelector("g.columns");
     }
