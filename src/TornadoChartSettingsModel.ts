@@ -273,29 +273,25 @@ class ChartAreaCardSettings extends Card {
     slices = [this.backgroundColor];
 }
 
-interface ILocalizedFlagsSelectionItemMember {
-    value: number;
-    displayName: string;
-    displayNameKey: string;
+export enum LabelDisplayMode {
+    Value = "value",
+    Percentage = "percentage",
+    ValueAndPercentage = "valueAndPercentage",
 }
 
-export const LabelContentFlags = {
-    Value: 1,
-    Percentage: 2,
-} as const;
-
-export const labelContentOptions: ILocalizedFlagsSelectionItemMember[] = [
-    { value: LabelContentFlags.Value, displayNameKey: "Visual_Value", displayName: "Value" },
-    { value: LabelContentFlags.Percentage, displayNameKey: "Visual_Percentage", displayName: "Percentage" },
+export const labelContentOptions: IEnumMemberWithDisplayNameKey[] = [
+    { value: LabelDisplayMode.Value, displayName: "Value", key: "Visual_Value" },
+    { value: LabelDisplayMode.Percentage, displayName: "Percentage", key: "Visual_Percentage" },
+    { value: LabelDisplayMode.ValueAndPercentage, displayName: "Value (%)", key: "Visual_ValueAndPercentage" },
 ];
 
 class LabelsOptionsGroup extends Card {
-    displayFormat = new formattingSettings.ItemFlagsSelection({
+    displayFormat = new formattingSettings.ItemDropdown({
         name: "displayFormat",
         displayName: "Label content",
         displayNameKey: "Visual_LabelContent",
         items: labelContentOptions,
-        value: "1"
+        value: labelContentOptions[0]
     });
 
     name: string = "options";
@@ -637,6 +633,7 @@ export class TornadoChartSettingsModel extends Model {
     setLocalizedOptions(localizationManager: ILocalizationManager) {
         this.setLocalizedDisplayName(positionOptions, localizationManager);
         this.setLocalizedDisplayName(categoryPositionOptions, localizationManager);
+        this.setLocalizedDisplayName(labelContentOptions, localizationManager);
     }   
 
     public setLocalizedDisplayName(options: IEnumMemberWithDisplayNameKey[], localizationManager: ILocalizationManager) {

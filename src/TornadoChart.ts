@@ -109,7 +109,7 @@ import {
 } from "./interfaces";
 import { TornadoWebBehavior } from "./TornadoWebBehavior";
 import * as tooltipBuilder from "./tooltipBuilder";
-import { TornadoChartSettingsModel, DataLabelSettings, LegendCardSettings, BaseFontControlSettings, FontDefaultOptions, TornadoObjectNames, LabelContentFlags} from "./TornadoChartSettingsModel";
+import { TornadoChartSettingsModel, DataLabelSettings, LegendCardSettings, BaseFontControlSettings, FontDefaultOptions, TornadoObjectNames, LabelDisplayMode} from "./TornadoChartSettingsModel";
 import { TornadoOnObjectService } from "./onObject/TornadoOnObjectService";
 import { titleEditSubSelection } from "./onObject/references";
 
@@ -140,6 +140,9 @@ export class TornadoChart implements IVisual {
     private static DefaultLabelSettingsLabelPrecision = null;
     private static MaxAngle: number = 180;
     private static MinAngle: number = 0;
+
+    private static DefaultForegroundColor: string = "#333333";
+    private static DefaultBackgroundColor: string = "#FFFFFF";
 
     public static ScrollBarWidth = 22;
     public static DefaultLabelsWidth = 3;
@@ -422,12 +425,12 @@ export class TornadoChart implements IVisual {
 
     private get themeForegroundColor(): string {
         const extendedPalette = this.colors as ISandboxExtendedColorPalette;
-        return extendedPalette?.foreground?.value || "#333333";
+        return extendedPalette?.foreground?.value || TornadoChart.DefaultForegroundColor;
     }
 
     private get themeBackgroundColor(): string {
         const extendedPalette = this.colors as ISandboxExtendedColorPalette;
-        return extendedPalette?.background?.value || "#FFFFFF";
+        return extendedPalette?.background?.value || TornadoChart.DefaultBackgroundColor;
     }
 
     private columnPadding: number = 5;
@@ -992,7 +995,7 @@ export class TornadoChart implements IVisual {
         percentage: number): LabelData {
 
         const fontSize: number = this.formattingSettings.dataLabels.labelsValuesGroup.font.fontSize.value;
-        const selectedFlags: number = Number(this.formattingSettings.dataLabels.labelsOptionsGroup.displayFormat?.value ?? 1);
+        const displayMode: string = this.formattingSettings.dataLabels.labelsOptionsGroup.displayFormat?.value?.value?.toString() ?? LabelDisplayMode.Value;
         const precision: number = TornadoChart.getPrecision(this.formattingSettings.dataLabels);
 
         let dx: number,
@@ -1003,18 +1006,23 @@ export class TornadoChart implements IVisual {
             : this.allColumnsWidth - (dxColumn + columnWidth + this.leftLabelMargin);
         const maxLabelWidth: number = Math.max(maxOutsideLabelWidth, columnWidth - this.leftLabelMargin);
 
-        // Format the value based on flags selection
+        // Format the value based on the selected display mode
         const formattedValue = labelFormatter.getLabelValueFormatter!(formatStringProp).format(value);
         const formattedPercentage = percentage.toFixed(precision) + "%";
-        
-        const labelParts: string[] = [];
-        if (selectedFlags & LabelContentFlags.Value) {
-            labelParts.push(formattedValue);
+
+        let labelText: string;
+        switch (displayMode) {
+            case LabelDisplayMode.Percentage:
+                labelText = formattedPercentage;
+                break;
+            case LabelDisplayMode.ValueAndPercentage:
+                labelText = `${formattedValue} (${formattedPercentage})`;
+                break;
+            case LabelDisplayMode.Value:
+            default:
+                labelText = formattedValue;
+                break;
         }
-        if (selectedFlags & LabelContentFlags.Percentage) {
-            labelParts.push(formattedPercentage);
-        }
-        const labelText = labelParts.length > 0 ? labelParts.join(" (") + (labelParts.length > 1 ? ")" : "") : "";
 
         const textProperties: TextProperties = {
             fontFamily: this.formattingSettings.dataLabels.labelsValuesGroup.font.fontFamily.value,
@@ -1074,10 +1082,10 @@ export class TornadoChart implements IVisual {
         const lineColor = this.formattingSettings?.centerLine?.color?.value?.value;
         const lineWidth = this.formattingSettings?.centerLine?.width?.value ?? 1;
 
-        // If no color is set, use high contrast color or a default
+        // If no color is set, use high contrast color or the theme foreground color
         const effectiveLineColor = this.colorHelper.isHighContrast 
             ? this.colorHelper.getHighContrastColor()
-            : (lineColor || "#333333");
+            : (lineColor || this.themeForegroundColor);
 
         if (!effectiveLineColor) {
             axesElements.remove();

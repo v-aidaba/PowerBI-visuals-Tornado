@@ -155,7 +155,7 @@ export class TornadoWebBehavior {
         // bright color
         this.gradients.append("stop")
             .attr("offset", (p: TornadoChartPoint) => ((hasSelection && p.selected) || (!hasSelection && !hasHighlight) ? 100 : p.highlightedValue / p.value * 100) + "%")
-            .attr("stop-color", (p: TornadoChartPoint) => this.colorHelper.isHighContrast ? this.colorHelper.getThemeColor("background") : p.color)
+            .attr("stop-color", (p: TornadoChartPoint) => this.colorHelper.isHighContrast ? this.colorHelper.getThemeColor() : p.color)
             .attr("stop-opacity", 1);
 
         // from right to left
@@ -163,7 +163,7 @@ export class TornadoWebBehavior {
         // but % starts from left to right (so f.e 30% means end point will be at 30% starting from left, but coloring will start from right until reach end point)
         this.gradients.append("stop")
             .attr("offset", (p: TornadoChartPoint) => p.highlightedValue / p.value * 100 + "%")
-            .attr("stop-color", (p: TornadoChartPoint) => this.colorHelper.isHighContrast ? this.colorHelper.getThemeColor("background") : p.color)
+            .attr("stop-color", (p: TornadoChartPoint) => this.colorHelper.isHighContrast ? this.colorHelper.getThemeColor() : p.color)
             .attr("stop-opacity", 0.4);
     }
  

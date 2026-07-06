@@ -472,7 +472,11 @@ describe("TornadoChart", () => {
                 (dataView.metadata.objects!).negativeBars.fill = getSolidColorStructuralObject(color);
 
                 visualBuilder.updateRenderTimeout(dataView, () => {
-                    expect(dataView.metadata.objects!["negativeBars"].fill).toBeDefined();
+                    // The negative bar's gradient should be painted with the configured fill color
+                    const stopColorMatches: boolean = Array.from(visualBuilder.gradients)
+                        .some((gradient: SVGElement) => Array.from(gradient.querySelectorAll("stop"))
+                            .some((stop: Element) => areColorsEqual(stop.getAttribute("stop-color") || "", color)));
+                    expect(stopColorMatches).toBe(true);
                     done();
                 });
             });
@@ -518,13 +522,23 @@ describe("TornadoChart", () => {
                 });
             });
 
-            it("cornerRadius", (done) => {
-                (dataView.metadata.objects!).negativeBars.cornerRadius = 10;
+            it("cornerRadius", () => {
+                // Ensure a negative bar with non-zero width (the most negative value maps to zero width)
+                (<number[]>dataView.categorical!.values![0].values)[0] = -300;
+                (<number[]>dataView.categorical!.values![0].values)[1] = -900;
 
-                visualBuilder.updateRenderTimeout(dataView, () => {
-                    expect(dataView.metadata.objects!["negativeBars"].cornerRadius).toBe(10);
-                    done();
-                });
+                const getPaths = (): string[] => Array.from(visualBuilder.columns)
+                    .map((element: Element) => element.getAttribute("d") || "");
+
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+                const before: string[] = getPaths();
+
+                (dataView.metadata.objects!).negativeBars.cornerRadius = 10;
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+                const after: string[] = getPaths();
+
+                // Rounding the corners of negative bars changes their rendered path
+                expect(after).not.toEqual(before);
             });
         });
 
@@ -540,7 +554,11 @@ describe("TornadoChart", () => {
                 (dataView.metadata.objects!).barAppearance.borderColor = getSolidColorStructuralObject(color);
 
                 visualBuilder.updateRenderTimeout(dataView, () => {
-                    expect(dataView.metadata.objects!["barAppearance"].borderColor).toBeDefined();
+                    // At least one column should render with the configured border color as its stroke
+                    const strokeMatches: boolean = Array.from(visualBuilder.columns)
+                        .some((element: Element) => areColorsEqual(
+                            getComputedStyle(element).getPropertyValue("stroke"), color));
+                    expect(strokeMatches).toBe(true);
                     done();
                 });
             });
@@ -549,27 +567,42 @@ describe("TornadoChart", () => {
                 (dataView.metadata.objects!).barAppearance.borderWidth = 3;
 
                 visualBuilder.updateRenderTimeout(dataView, () => {
-                    expect(dataView.metadata.objects!["barAppearance"].borderWidth).toBe(3);
+                    // At least one column should render with the configured stroke width
+                    const widthMatches: boolean = Array.from(visualBuilder.columns)
+                        .some((element: Element) => getComputedStyle(element).getPropertyValue("stroke-width") === "3px");
+                    expect(widthMatches).toBe(true);
                     done();
                 });
             });
 
-            it("cornerRadius", (done) => {
+            it("cornerRadius", () => {
+                const getPaths = (): string[] => Array.from(visualBuilder.columns)
+                    .map((element: Element) => element.getAttribute("d") || "");
+
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+                const before: string[] = getPaths();
+
                 (dataView.metadata.objects!).barAppearance.cornerRadius = 15;
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+                const after: string[] = getPaths();
 
-                visualBuilder.updateRenderTimeout(dataView, () => {
-                    expect(dataView.metadata.objects!["barAppearance"].cornerRadius).toBe(15);
-                    done();
-                });
+                // Rounding the corners changes the rendered column paths
+                expect(after).not.toEqual(before);
             });
 
-            it("barSpacing", (done) => {
-                (dataView.metadata.objects!).barAppearance.barSpacing = 25;
+            it("barSpacing", () => {
+                const getTransforms = (): string[] => Array.from(visualBuilder.columns)
+                    .map((element: Element) => element.getAttribute("transform") || "");
 
-                visualBuilder.updateRenderTimeout(dataView, () => {
-                    expect(dataView.metadata.objects!["barAppearance"].barSpacing).toBe(25);
-                    done();
-                });
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+                const before: string[] = getTransforms();
+
+                (dataView.metadata.objects!).barAppearance.barSpacing = 25;
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+                const after: string[] = getTransforms();
+
+                // Changing bar spacing should reposition/resize the rendered columns
+                expect(after).not.toEqual(before);
             });
         });
 
@@ -638,11 +671,15 @@ describe("TornadoChart", () => {
                 };
             });
 
-            it("show", (done) => {
-                visualBuilder.updateRenderTimeout(dataView, () => {
-                    expect(dataView.metadata.objects!["chartArea"].show).toBe(true);
-                    done();
-                });
+            it("show", () => {
+                const color: string = "#EEFFAA";
+                (dataView.metadata.objects!).chartArea.backgroundColor = getSolidColorStructuralObject(color);
+                (dataView.metadata.objects!).chartArea.show = false;
+
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+                // With the chart area hidden, the background is not painted with the configured color
+                const fill: string = getComputedStyle(visualBuilder.chartAreaBackground).getPropertyValue("fill");
+                expect(areColorsEqual(fill, color)).toBe(false);
             });
 
             it("backgroundColor", (done) => {
@@ -667,22 +704,34 @@ describe("TornadoChart", () => {
                 };
             });
 
-            it("normalize", (done) => {
-                (dataView.metadata.objects!).categoryAxis.normalize = true;
+            it("normalize", () => {
+                const getPaths = (): string[] => Array.from(visualBuilder.columns)
+                    .map((element: Element) => element.getAttribute("d") || "");
 
-                visualBuilder.updateRenderTimeout(dataView, () => {
-                    expect(dataView.metadata.objects!["categoryAxis"].normalize).toBe(true);
-                    done();
-                });
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+                const before: string[] = getPaths();
+
+                (dataView.metadata.objects!).categoryAxis.normalize = true;
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+                const after: string[] = getPaths();
+
+                // Normalizing changes how column widths are scaled per series
+                expect(after).not.toEqual(before);
             });
 
-            it("end", (done) => {
-                (dataView.metadata.objects!).categoryAxis.end = 100;
+            it("end", () => {
+                const getPaths = (): string[] => Array.from(visualBuilder.columns)
+                    .map((element: Element) => element.getAttribute("d") || "");
 
-                visualBuilder.updateRenderTimeout(dataView, () => {
-                    expect(dataView.metadata.objects!["categoryAxis"].end).toBe(100);
-                    done();
-                });
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+                const before: string[] = getPaths();
+
+                (dataView.metadata.objects!).categoryAxis.end = 100;
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+                const after: string[] = getPaths();
+
+                // Capping the axis end value rescales the rendered column widths
+                expect(after).not.toEqual(before);
             });
         });
     });
