@@ -284,7 +284,7 @@ describe("TornadoChart", () => {
                 visualBuilder.updateFlushAllD3Transitions(dataView);
                 visualBuilder.updateRenderTimeout(dataView, async () => {
                     await delay(defaultAwaitTime);
-                    let columns: HTMLElement[] = Array.from(visualBuilder.columns[0].querySelectorAll("path.column"));
+                    let columns: HTMLElement[] = Array.from(visualBuilder.columns);
 
                     colors.forEach((color: string, index: number) => {
                         const doColumnContainColor: boolean = columns.some((element: HTMLElement) => {
@@ -390,6 +390,47 @@ describe("TornadoChart", () => {
 
                 Array.from(visualBuilder.labelText).forEach((element: Element) => {
                     expect(getComputedStyle(element).getPropertyValue("font-size")).toBe(fontSizeInPt);
+                });
+            });
+
+            describe("displayFormat (label content)", () => {
+                const getAllLabelTexts = (): string[] =>
+                    Array.from(visualBuilder.labels)
+                        .flatMap((label) => Array.from(label.querySelectorAll("text.label-text")))
+                        .map((element) => element.textContent || "");
+
+                beforeEach(() => {
+                    // Use a plain numeric format so the value part never contains a "%"
+                    dataView.categorical!.values!.forEach((column: DataViewValueColumn) => {
+                        column.source.format = "#,0";
+                    });
+                });
+
+                it("Value mode renders the value without a percentage", () => {
+                    (dataView.metadata.objects!).labels.displayFormat = "value";
+                    visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                    const texts: string[] = getAllLabelTexts();
+                    expect(texts.length).toBeGreaterThan(0);
+                    texts.forEach((text: string) => expect(text).not.toContain("%"));
+                });
+
+                it("Percentage mode renders a percentage", () => {
+                    (dataView.metadata.objects!).labels.displayFormat = "percentage";
+                    visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                    const texts: string[] = getAllLabelTexts();
+                    expect(texts.length).toBeGreaterThan(0);
+                    expect(texts.some((text: string) => text.trim().endsWith("%"))).toBeTrue();
+                });
+
+                it("Value (%) mode renders value and percentage together", () => {
+                    (dataView.metadata.objects!).labels.displayFormat = "valueAndPercentage";
+                    visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                    const texts: string[] = getAllLabelTexts();
+                    expect(texts.length).toBeGreaterThan(0);
+                    expect(texts.some((text: string) => text.includes("(") && text.includes("%)"))).toBeTrue();
                 });
             });
         });
@@ -677,9 +718,9 @@ describe("TornadoChart", () => {
                 (dataView.metadata.objects!).chartArea.show = false;
 
                 visualBuilder.updateFlushAllD3Transitions(dataView);
-                // With the chart area hidden, the background is not painted with the configured color
+                // With the chart area hidden, the background is not painted
                 const fill: string = getComputedStyle(visualBuilder.chartAreaBackground).getPropertyValue("fill");
-                expect(areColorsEqual(fill, color)).toBe(false);
+                expect(fill).toBe("none");
             });
 
             it("backgroundColor", (done) => {
@@ -789,7 +830,7 @@ describe("TornadoChart", () => {
             visualBuilder.visualHost.colorPalette.foreground = { value: foregroundColor };
 
             visualBuilder.updateRenderTimeout(dataView, () => {
-                columns = Array.from(visualBuilder.columns[0].querySelectorAll("path.column"));
+                columns = Array.from(visualBuilder.columns);
             });
         });
 

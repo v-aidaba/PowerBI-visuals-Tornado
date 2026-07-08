@@ -196,16 +196,16 @@ export class TornadoChart implements IVisual {
         for (let s = 0; s < Math.min(values.length, TornadoChart.MaxSeries); s++) {
             const seriesValues = <number[]>values[s].values;
             seriesMinMax.push({
-                min: Math.min(min(seriesValues), 0),
-                max: Math.max(max(seriesValues), 0)
+                min: Math.min(min(seriesValues) ?? 0, 0),
+                max: Math.max(max(seriesValues) ?? 0, 0)
             });
         }
         
-        let maxValue: number = max(<number[]>values[0].values);
-        let minValue: number = Math.min(min(<number[]>values[0].values), 0);
+        let maxValue: number = max(<number[]>values[0].values) ?? 0;
+        let minValue: number = Math.min(min(<number[]>values[0].values) ?? 0, 0);
         if (values.length >= TornadoChart.MaxSeries) {
-            minValue = min([minValue, min(<number[]>values[1].values)]);
-            maxValue = max([maxValue, max(<number[]>values[1].values)]);
+            minValue = min([minValue, min(<number[]>values[1].values) ?? 0]) ?? 0;
+            maxValue = max([maxValue, max(<number[]>values[1].values) ?? 0]) ?? 0;
         }
         const labelFormatter = TornadoChart.prepareFormatter(maxValue, formattingSettings.dataLabels);
         const hasDynamicSeries: boolean = !!values.source;
@@ -627,17 +627,19 @@ export class TornadoChart implements IVisual {
         const showBg = this.formattingSettings?.chartArea?.show?.value ?? false;
         const bgColor = showBg ? this.formattingSettings?.chartArea?.backgroundColor?.value?.value : null;
         const effectiveBgColor = this.colorHelper.isHighContrast 
-            ? (bgColor ? this.colorHelper.getHighContrastColor("background", bgColor) : "transparent")
-            : (bgColor || "transparent");
+            ? (bgColor ? this.colorHelper.getHighContrastColor("background", bgColor) : "none")
+            : (bgColor || "none");
+        const isChartAreaSubSelectable = isFormatMode && showBg;
         this.chartAreaBackground
             .attr("transform", elementsTranslate)
             .attr("x", 0)
             .attr("y", 0)
             .attr("width", this.allColumnsWidth)
             .attr("height", rootHeight)
-            .style("fill", effectiveBgColor);
+            .style("fill", effectiveBgColor)
+            .style("pointer-events", isChartAreaSubSelectable ? "all" : "none");
 
-        this.applyOnObjectStylesToChartArea(isFormatMode && showBg);
+        this.applyOnObjectStylesToChartArea(isChartAreaSubSelectable);
 
         this.columns
             .attr("transform", elementsTranslate);
@@ -735,12 +737,22 @@ export class TornadoChart implements IVisual {
     }
 
     private clearData(): void {
+        this.resetChartAreaBackground();
         this.columns.selectAll("*").remove();
         this.axes.selectAll("*").remove();
         this.labels.selectAll("*").remove();
         this.categories.selectAll("*").remove();
         this.legend.reset();
         this.legend.drawLegend({ dataPoints: [] }, this.viewport);
+    }
+
+    private resetChartAreaBackground(): void {
+        this.chartAreaBackground
+            .attr("width", 0)
+            .attr("height", 0)
+            .style("fill", "none")
+            .style("pointer-events", "none")
+            .classed(HtmlSubSelectableClass, false);
     }
 
     private renderWithScrolling(isFormatMode: boolean): void {
@@ -844,9 +856,7 @@ export class TornadoChart implements IVisual {
             const highlightOffset: number = highlighted ? heightColumn * (1 - TornadoChart.HighlightedShapeFactor) / 2 : 0;
             const dy: number = (heightColumn + this.columnPadding) * (i % categoriesLength) + highlightOffset;
 
-            const absValue = Math.abs(dataPoint.value);
-            const absMax = Math.abs(maxForWidth);
-            const percentage = absMax > 0 ? (absValue / absMax) * 100 : 0;
+            const percentage = this.columnWidth > 0 ? (widthOfColumn / this.columnWidth) * 100 : 0;
 
             const label: LabelData = this.getLabelData(
                 dataPoint.value,
