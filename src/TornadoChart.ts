@@ -968,7 +968,7 @@ export class TornadoChart implements IVisual {
             .attr("tabindex", 0)
             .attr("role", "option")
             .attr("aria-label", (d: TornadoChartPoint) => { 
-                return `${d.tooltipData?.[0].displayName} = ${d.tooltipData?.[0].value}`;
+                return `${d.tooltipData?.[0]?.displayName} = ${d.tooltipData?.[0]?.value}`;
             });
 
         columnsSelection
@@ -1161,6 +1161,11 @@ export class TornadoChart implements IVisual {
         const labelYOffset: number = this.heightColumn / 2 + this.dataView.labelHeight / 2 - this.InnerTextHeightDelta;
         const categoriesLength: number = this.dataView.categories.length;
 
+        // When negative bars are hidden their columns aren't rendered, so suppress
+        // the matching labels (kept in the join to preserve per-row alignment).
+        const showNegativeBars: boolean = this.formattingSettings?.negativeBars?.show?.value ?? true;
+        const isLabelHidden = (p: TornadoChartPoint): boolean => !showNegativeBars && p.value < 0;
+
         const labelFontFamily : string = formattingSettings.dataLabels.labelsValuesGroup.font.fontFamily.value;
 
         const labelFontIsBold : boolean = formattingSettings.dataLabels.labelsValuesGroup.font.bold.value,
@@ -1186,7 +1191,7 @@ export class TornadoChart implements IVisual {
 
         labelSelectionMerged
             .select(TornadoChart.LabelTitle.selectorName)
-            .text((p: TornadoChartPoint) => p.label.source);
+            .text((p: TornadoChartPoint) => isLabelHidden(p) ? "" : p.label.source);
 
         labelSelectionMerged
             .attr("transform", (p: TornadoChartPoint, index: number) => {
@@ -1202,7 +1207,7 @@ export class TornadoChart implements IVisual {
             .attr("font-weight", labelFontIsBold ? "bold" : "normal")
             .attr("font-style", labelFontIsItalic ? "italic" : "normal")
             .attr("text-decoration", labelFontIsUnderlined? "underline" : "normal")
-            .text((p: TornadoChartPoint) => p.label.value)
+            .text((p: TornadoChartPoint) => isLabelHidden(p) ? "" : p.label!.value)
             .attr("role", "presentation");
 
         labelSelection

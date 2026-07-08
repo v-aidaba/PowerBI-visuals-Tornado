@@ -269,8 +269,7 @@ describe("TornadoChart", () => {
 
     describe("Format settings test", () => {
         describe("Data colors", () => {
-            //Await usage
-            it("colors", () => {
+            it("colors", (done) => {
                 let colors: string[] = getRandomUniqueHexColors(dataView.categorical!.values!.length);
 
                 dataView.categorical!.values!.forEach((column: DataViewValueColumn, index: number) => {
@@ -281,22 +280,23 @@ describe("TornadoChart", () => {
                     };
                 });
 
-                visualBuilder.updateFlushAllD3Transitions(dataView);
-                visualBuilder.updateRenderTimeout(dataView, async () => {
-                    await delay(defaultAwaitTime);
-                    let columns: HTMLElement[] = Array.from(visualBuilder.columns);
+                visualBuilder.updateRenderTimeout(dataView, () => {
+                    // Column fills are gradient references, so the configured color lives in the gradient stops
+                    const stopColors: string[] = Array.from(visualBuilder.gradients)
+                        .flatMap((gradient: SVGElement) => Array.from(gradient.querySelectorAll("stop")))
+                        .map((stop: Element) => stop.getAttribute("stop-color") || "");
 
                     colors.forEach((color: string, index: number) => {
-                        const doColumnContainColor: boolean = columns.some((element: HTMLElement) => {
-                            return areColorsEqual(getComputedStyle(element).getPropertyValue("fill"), color);
-                        });
+                        const colorApplied: boolean = stopColors.some((stopColor: string) => areColorsEqual(stopColor, color));
 
                         if (index < MaxSeries) {
-                            expect(doColumnContainColor).toBeTruthy();
+                            expect(colorApplied).toBeTruthy();
                         } else {
-                            expect(doColumnContainColor).toBe(false);
+                            expect(colorApplied).toBe(false);
                         }
                     });
+
+                    done();
                 });
             });
         });
@@ -495,17 +495,15 @@ describe("TornadoChart", () => {
                 });
             });
 
-            it("hidden when show is off", (done) => {
-                const shownCount: number = (<number[]>dataView.categorical!.values![0].values)
-                    .concat(<number[]>dataView.categorical!.values![1].values).length;
+            it("hidden when show is off", () => {
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+                const renderedWhenShown: number = visualBuilder.columns.length;
 
                 (dataView.metadata.objects!).negativeBars.show = false;
+                visualBuilder.updateFlushAllD3Transitions(dataView);
 
-                visualBuilder.updateRenderTimeout(dataView, () => {
-                    // Hiding negative bars should render fewer columns than the total data points
-                    expect(visualBuilder.columns.length).toBeLessThan(shownCount);
-                    done();
-                });
+                // Hiding negative bars should render fewer columns than when they are shown
+                expect(visualBuilder.columns.length).toBeLessThan(renderedWhenShown);
             });
 
             it("fill", (done) => {
@@ -779,7 +777,7 @@ describe("TornadoChart", () => {
 
     describe("Highligh test", () => {
         const expectedHighligtedCount: number = 1;
-        let columns: HTMLElement[];
+        let columns: SVGPathElement[];
         let columnsDefs: HTMLElement;
         let dataViewWithHighLighted: DataView;
 
@@ -820,7 +818,7 @@ describe("TornadoChart", () => {
         const backgroundColor: string = "#000000";
         const foregroundColor: string = "#ff00ff";
 
-        let columns: HTMLElement[];
+        let columns: SVGPathElement[];
 
         beforeEach(() => {
 
@@ -836,14 +834,14 @@ describe("TornadoChart", () => {
 
         it("should not use fill style", (done) => {
             visualBuilder.updateRenderTimeout(dataView, () => {
-                expect(isColorAppliedToElements(columns, undefined, "fill"));
+                expect(isColorAppliedToElements(columns, undefined, "fill")).toBe(false);
                 done();
             });
         });
 
         it("should use stroke style", (done) => {
             visualBuilder.updateRenderTimeout(dataView, () => {
-                expect(isColorAppliedToElements(columns, foregroundColor, "stroke"));
+                expect(isColorAppliedToElements(columns, foregroundColor, "stroke")).toBe(true);
                 done();
             });
         });
@@ -852,7 +850,7 @@ describe("TornadoChart", () => {
     describe("Selection tests", () => {
         it("column can be selected", (done) => {
             visualBuilder.updateRenderTimeout(dataView, () => {
-                const firstColumn: HTMLElement = visualBuilder.columns[0];
+                const firstColumn: SVGPathElement = visualBuilder.columns[0];
                 d3Click(firstColumn, 0, 0, ClickEventType.Default);
 
                 renderTimeout(() => {
@@ -864,7 +862,7 @@ describe("TornadoChart", () => {
 
         it("column can be deselected", (done) => {
             visualBuilder.updateRenderTimeout(dataView, () => {
-                const firstColumn: HTMLElement = visualBuilder.columns[0];
+                const firstColumn: SVGPathElement = visualBuilder.columns[0];
                 d3Click(firstColumn, 0, 0, ClickEventType.Default);
 
                 renderTimeout(() => {
@@ -898,8 +896,8 @@ describe("TornadoChart", () => {
         });
 
         function checkMultiselection(eventType: number, done: DoneFn): void {
-            const firstColumn: HTMLElement = visualBuilder.columns[0];
-            const secondColumn: HTMLElement = visualBuilder.columns[1];
+            const firstColumn: SVGPathElement = visualBuilder.columns[0];
+            const secondColumn: SVGPathElement = visualBuilder.columns[1];
             d3Click(firstColumn, 0, 0, ClickEventType.Default);
             renderTimeout(() => {
                 expect(visualBuilder.selectedColumns?.length).toBe(1);
@@ -966,18 +964,18 @@ describe("TornadoChart", () => {
         it("column can be focused", () => {
             visualBuilder.updateFlushAllD3Transitions(dataView);
 
-            const columns: HTMLElement[] = Array.from(visualBuilder.columns);
-            const firstColumn: HTMLElement = columns[0];
+            const columns: SVGPathElement[] = Array.from(visualBuilder.columns);
+            const firstColumn: SVGPathElement = columns[0];
 
-            columns.forEach((column: HTMLElement) => {
+            columns.forEach((column: SVGPathElement) => {
                 expect(column.matches(":focus-visible")).toBeFalse();
             });
 
             firstColumn.focus();
             expect(firstColumn.matches(':focus-visible')).toBeTrue();
 
-            const otherColumns: HTMLElement[] = columns.slice(1);
-            otherColumns.forEach((column: HTMLElement) => {
+            const otherColumns: SVGPathElement[] = columns.slice(1);
+            otherColumns.forEach((column: SVGPathElement) => {
                 expect(column.matches(":focus-visible")).toBeFalse();
             });
 
@@ -985,15 +983,15 @@ describe("TornadoChart", () => {
 
         function checkKeyboardSingleSelection(keyboardSingleSelectionEvent: KeyboardEvent): void {
             visualBuilder.updateFlushAllD3Transitions(dataView);
-            const columns: HTMLElement[] = Array.from(visualBuilder.columns);
-            const firstColumn: HTMLElement = columns[0];
-            const secondColumn: HTMLElement = columns[1];
+            const columns: SVGPathElement[] = Array.from(visualBuilder.columns);
+            const firstColumn: SVGPathElement = columns[0];
+            const secondColumn: SVGPathElement = columns[1];
 
             firstColumn.dispatchEvent(keyboardSingleSelectionEvent);
             expect(firstColumn.getAttribute("aria-selected")).toBe("true");
 
-            const otherColumns: HTMLElement[] = columns.slice(1);
-            otherColumns.forEach((column: HTMLElement) => {
+            const otherColumns: SVGPathElement[] = columns.slice(1);
+            otherColumns.forEach((column: SVGPathElement) => {
                 expect(column.getAttribute("aria-selected")).toBe("false");
             });
 
@@ -1001,7 +999,7 @@ describe("TornadoChart", () => {
             expect(secondColumn.getAttribute("aria-selected")).toBe("true");
 
             columns.splice(1, 1);
-            columns.forEach((column: HTMLElement) => {
+            columns.forEach((column: SVGPathElement) => {
                 expect(column.getAttribute("aria-selected")).toBe("false");
             }
             );
@@ -1010,9 +1008,9 @@ describe("TornadoChart", () => {
         function checkKeyboardMultiSelection(keyboardMultiselectionEvent: KeyboardEvent): void {
             visualBuilder.updateFlushAllD3Transitions(dataView);
             const enterEvent = new KeyboardEvent("keydown", { code: "Enter", bubbles: true });
-            const columns: HTMLElement[] = Array.from(visualBuilder.columns);
-            const firstColumn: HTMLElement = columns[0];
-            const secondColumn: HTMLElement = columns[1];
+            const columns: SVGPathElement[] = Array.from(visualBuilder.columns);
+            const firstColumn: SVGPathElement = columns[0];
+            const secondColumn: SVGPathElement = columns[1];
 
             // select first column
             firstColumn.dispatchEvent(enterEvent);
