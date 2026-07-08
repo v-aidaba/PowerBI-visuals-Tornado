@@ -610,7 +610,7 @@ export class TornadoChart implements IVisual {
         return dataView;
     }
 
-    private updateElements(): void {
+    private updateElements(isFormatMode: boolean): void {
         let translateX: number = 0;
         const position: string = this.formattingSettings.category.positionDropdown.value.value.toString();
         if (position === "Left") {
@@ -637,6 +637,8 @@ export class TornadoChart implements IVisual {
             .attr("height", rootHeight)
             .style("fill", effectiveBgColor);
 
+        this.applyOnObjectStylesToChartArea(isFormatMode && showBg);
+
         this.columns
             .attr("transform", elementsTranslate);
 
@@ -645,6 +647,14 @@ export class TornadoChart implements IVisual {
 
         this.axes
             .attr("transform", elementsTranslate);
+    }
+
+    private applyOnObjectStylesToChartArea(isSubSelectable: boolean): void {
+        this.chartAreaBackground
+            .classed(HtmlSubSelectableClass, isSubSelectable)
+            .attr(SubSelectableObjectNameAttribute, TornadoObjectNames.ChartArea)
+            .attr(SubSelectableDisplayNameAttribute, this.localizationManager.getDisplayName("Visual_ChartArea"))
+            .attr(SubSelectableTypeAttribute, SubSelectionStylesType.Shape);
     }
 
     private static calculateRootHeight(dataPoints: TornadoChartPoint[]): number{
@@ -801,7 +811,7 @@ export class TornadoChart implements IVisual {
     private renderMiddleSection(isFormatMode: boolean): void {
         const tornadoChartDataView: TornadoChartDataView = this.dataView;
         this.calculateDataPoints(tornadoChartDataView.dataPoints);
-        this.updateElements();
+        this.updateElements(isFormatMode);
         this.renderColumns(tornadoChartDataView.dataPoints, isFormatMode);
         this.renderLabels(tornadoChartDataView.dataPoints, this.formattingSettings.dataLabels, isFormatMode);
     }
@@ -867,7 +877,7 @@ export class TornadoChart implements IVisual {
 
         const columnsSelection: Selection<any> = this.columns
             .selectAll(TornadoChart.Column.selectorName)
-            .data(filteredColumnsData);
+            .data(filteredColumnsData, (p: unknown) => (p as TornadoChartPoint).uniqId);
 
         // defs should only contain required gradients,
         // otherwise gradients are duplicated
@@ -875,7 +885,7 @@ export class TornadoChart implements IVisual {
 
         this.gradients = this.columns.append("defs")
             .selectAll("linearGradient")
-            .data(filteredColumnsData)
+            .data(filteredColumnsData, (p: unknown) => (p as TornadoChartPoint).uniqId)
             .enter()
             .append("linearGradient")
             .attr("id", (p: TornadoChartPoint) => "gradient-" + p.uniqId) // Use the index of the column as the id

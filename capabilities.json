@@ -222,12 +222,9 @@
                 "displayFormat": {
                     "type": {
                         "enumeration": [
-                            {
-                                "value": "value"                            },
-                            {
-                                "value": "percentage"                            },
-                            {
-                                "value": "valueAndPercentage"                            }
+                            {"value": "value"},
+                            {"value": "percentage"},
+                            {"value": "valueAndPercentage"}
                         ]
                     }
                 },
