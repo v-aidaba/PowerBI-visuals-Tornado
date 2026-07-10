@@ -105,30 +105,6 @@ export class SubSelectionStylesService {
         return textStyles;
     }
 
-    public static GetNegativeBarsStyles(localizationManager: ILocalizationManager): SubSelectionStyles {
-        return {
-            type: SubSelectionStylesType.Shape,
-            fill: {
-                reference: {
-                    ...negativeBarsReferences.fill
-                },
-                label: localizationManager.getDisplayName("Visual_Fill")
-            },
-        };
-    }
-
-    public static GetBarAppearanceStyles(localizationManager: ILocalizationManager): SubSelectionStyles {
-        return {
-            type: SubSelectionStylesType.Shape,
-            fill: {
-                reference: {
-                    ...barAppearanceReferences.borderColor
-                },
-                label: localizationManager.getDisplayName("Visual_BorderColor")
-            },
-        };
-    }
-
     public static GetCenterLineStyles(localizationManager: ILocalizationManager): SubSelectionStyles {
         return {
             type: SubSelectionStylesType.Shape,
@@ -274,6 +250,11 @@ export class SubSelectionShortcutsService {
             },
             {
                 type: VisualShortcutType.Navigate,
+                destinationInfo: { cardUid: labelsReference.cardUid },
+                label: localizationManager.getDisplayName("Visual_DataLabels")
+            },
+            {
+                type: VisualShortcutType.Navigate,
                 destinationInfo: { cardUid: barAppearanceReferences.cardUid },
                 label: localizationManager.getDisplayName("Visual_BarAppearance")
             },
@@ -292,6 +273,11 @@ export class SubSelectionShortcutsService {
 
     public static GetLabelsShortcuts(localizationManager: ILocalizationManager): VisualSubSelectionShortcuts{
         return [
+            {
+                type: VisualShortcutType.Picker,
+                ...labelsReference.displayFormat,
+                label: localizationManager.getDisplayName("Visual_LabelContent")
+            },
             {
                 type: VisualShortcutType.Toggle,
                 ...labelsReference.show,
@@ -317,54 +303,6 @@ export class SubSelectionShortcutsService {
                 type: VisualShortcutType.Navigate,
                 destinationInfo: { cardUid: labelsReference.cardUid },
                 label: localizationManager.getDisplayName("Visual_OnObject_FormatLabels")
-            }
-        ];
-    }
-
-    public static GetNegativeBarsShortcuts(localizationManager: ILocalizationManager): VisualSubSelectionShortcuts {
-        return [
-            {
-                type: VisualShortcutType.Toggle,
-                ...negativeBarsReferences.show,
-                disabledLabel: localizationManager.getDisplayName("Visual_OnObject_Delete")
-            },
-            {
-                type: VisualShortcutType.Divider,
-            },
-            {
-                type: VisualShortcutType.Reset,
-                relatedResetFormattingIds: [
-                    negativeBarsReferences.fill,
-                    negativeBarsReferences.transparency,
-                    negativeBarsReferences.borderColor,
-                    negativeBarsReferences.borderWidth,
-                    negativeBarsReferences.cornerRadius,
-                    negativeBarsReferences.show
-                ]
-            },
-            {
-                type: VisualShortcutType.Navigate,
-                destinationInfo: { cardUid: negativeBarsReferences.cardUid },
-                label: localizationManager.getDisplayName("Visual_NegativeBars")
-            }
-        ];
-    }
-
-    public static GetBarAppearanceShortcuts(localizationManager: ILocalizationManager): VisualSubSelectionShortcuts {
-        return [
-            {
-                type: VisualShortcutType.Reset,
-                relatedResetFormattingIds: [
-                    barAppearanceReferences.borderColor,
-                    barAppearanceReferences.borderWidth,
-                    barAppearanceReferences.cornerRadius,
-                    barAppearanceReferences.barSpacing
-                ]
-            },
-            {
-                type: VisualShortcutType.Navigate,
-                destinationInfo: { cardUid: barAppearanceReferences.cardUid },
-                label: localizationManager.getDisplayName("Visual_BarAppearance")
             }
         ];
     }
@@ -416,23 +354,6 @@ export class SubSelectionShortcutsService {
                 type: VisualShortcutType.Navigate,
                 destinationInfo: { cardUid: chartAreaReferences.cardUid },
                 label: localizationManager.getDisplayName("Visual_ChartArea")
-            }
-        ];
-    }
-
-    public static GetCategoryAxisShortcuts(localizationManager: ILocalizationManager): VisualSubSelectionShortcuts {
-        return [
-            {
-                type: VisualShortcutType.Reset,
-                relatedResetFormattingIds: [
-                    categoryAxisReferences.normalize,
-                    categoryAxisReferences.end
-                ]
-            },
-            {
-                type: VisualShortcutType.Navigate,
-                destinationInfo: { cardUid: categoryAxisReferences.cardUid },
-                label: localizationManager.getDisplayName("Visual_XAxis")
             }
         ];
     }

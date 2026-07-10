@@ -31,6 +31,7 @@ export interface IDataPointReference extends GroupFormattingModelReference {
 
 export interface ILabelsReference extends IFontReference {
     show: FormattingId;
+    displayFormat: FormattingId;
     precision: FormattingId;
     displayUnits: FormattingId;
     insideFill: FormattingId;

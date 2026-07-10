@@ -89,6 +89,10 @@ export const labelsReference: ILabelsReference = {
     ...createBaseFontReference(TornadoObjectNames.Labels, "insideFill"),
     cardUid: "Visual-labels-card",
     groupUid: "labels-group",
+    displayFormat: {
+        objectName: TornadoObjectNames.Labels,
+        propertyName: "displayFormat"
+    },
     precision: {
         objectName: TornadoObjectNames.Labels,
         propertyName: "labelPrecision"
