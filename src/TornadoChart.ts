@@ -1117,6 +1117,7 @@ export class TornadoChart implements IVisual {
             .classed(HtmlSubSelectableClass, isFormatMode && showCenterLine)
             .attr(SubSelectableObjectNameAttribute, TornadoObjectNames.CenterLine)
             .attr(SubSelectableDisplayNameAttribute, this.localizationManager.getDisplayName("Visual_CenterLine"))
+            .attr(SubSelectableTypeAttribute, SubSelectionStylesType.Shape)
             .style("stroke", effectiveLineColor)
             .style("stroke-width", lineWidth);
 
@@ -1148,7 +1149,7 @@ export class TornadoChart implements IVisual {
         const labelSelection: Selection<TornadoChartPoint> = this.main
                 .select(TornadoChart.Labels.selectorName)
                 .selectAll(TornadoChart.Label.selectorName)
-                .data(dataPoints.filter((p: TornadoChartPoint) => p.label.dx >= 0));
+                .data(dataPoints.filter((p: TornadoChartPoint) => p.label!.dx >= 0));
         const formattingSettings: TornadoChartSettingsModel = this.formattingSettings;
 
         // Check if labels can be displayed
@@ -1172,26 +1173,25 @@ export class TornadoChart implements IVisual {
             labelFontIsItalic : boolean = formattingSettings.dataLabels.labelsValuesGroup.font.italic.value,
             labelFontIsUnderlined : boolean = formattingSettings.dataLabels.labelsValuesGroup.font.underline.value;
 
-        const labelSelectionMerged: Selection<TornadoChartPoint> = labelSelection
+        const labelEnter: Selection<TornadoChartPoint> = labelSelection
             .enter()
             .append("g")
-            .merge(labelSelection);
+            .classed(TornadoChart.Label.className, true);
 
-        labelSelectionMerged
+        labelEnter
             .append("svg:title")
             .classed(TornadoChart.LabelTitle.className, true);
 
-        labelSelectionMerged
+        labelEnter
             .append("svg:text")
             .attr("dy", dataLabelUtils.DefaultDy)
             .classed(TornadoChart.LabelText.className, true);
 
-        labelSelectionMerged
-            .classed(TornadoChart.Label.className, true);
+        const labelSelectionMerged: Selection<TornadoChartPoint> = labelEnter.merge(labelSelection);
 
         labelSelectionMerged
             .select(TornadoChart.LabelTitle.selectorName)
-            .text((p: TornadoChartPoint) => isLabelHidden(p) ? "" : p.label.source);
+            .text((p: TornadoChartPoint) => isLabelHidden(p) ? "" : p.label!.source);
 
         labelSelectionMerged
             .attr("transform", (p: TornadoChartPoint, index: number) => {
@@ -1201,7 +1201,7 @@ export class TornadoChart implements IVisual {
 
         labelSelectionMerged
             .select(TornadoChart.LabelText.selectorName)
-            .attr("fill", (p: TornadoChartPoint) => this.colorHelper.isHighContrast ? this.colorHelper.getHighContrastColor("foreground", p.color) : p.label.color)
+            .attr("fill", (p: TornadoChartPoint) => this.colorHelper.isHighContrast ? this.colorHelper.getHighContrastColor("foreground", p.color) : p.label!.color)
             .attr("font-size", fontSizeInPx)
             .attr("font-family", labelFontFamily)
             .attr("font-weight", labelFontIsBold ? "bold" : "normal")
@@ -1247,18 +1247,19 @@ export class TornadoChart implements IVisual {
         }
         const categoriesSelection: Selection<any> = categoryElements.data(this.dataView.categories);
 
-        const categoriesSelectionMerged: Selection<any> = categoriesSelection
+        const categoriesEnter: Selection<any> = categoriesSelection
             .enter()
-            .append("g")
-            .merge(categoriesSelection);
+            .append("g");
 
-        categoriesSelectionMerged
+        categoriesEnter
             .append("svg:title")
             .classed(TornadoChart.CategoryTitle.className, true);
 
-        categoriesSelectionMerged
+        categoriesEnter
             .append("svg:text")
             .classed(TornadoChart.CategoryText.className, true);
+
+        const categoriesSelectionMerged: Selection<any> = categoriesEnter.merge(categoriesSelection);
 
         let xShift: number = 0;
 
@@ -1299,7 +1300,7 @@ export class TornadoChart implements IVisual {
             .exit()
             .remove();
 
-        this.applyOnObjectStylesToCategories(categoriesSelection, isFormatMode);
+        this.applyOnObjectStylesToCategories(categoriesSelectionMerged, isFormatMode);
     }
 
     private applyOnObjectStylesToCategories(selection: Selection<any>, isFormatMode: boolean): void {

@@ -276,6 +276,16 @@ export class SubSelectionShortcutsService {
                 type: VisualShortcutType.Navigate,
                 destinationInfo: { cardUid: barAppearanceReferences.cardUid },
                 label: localizationManager.getDisplayName("Visual_BarAppearance")
+            },
+            {
+                type: VisualShortcutType.Navigate,
+                destinationInfo: { cardUid: negativeBarsReferences.cardUid },
+                label: localizationManager.getDisplayName("Visual_NegativeBars")
+            },
+            {
+                type: VisualShortcutType.Navigate,
+                destinationInfo: { cardUid: categoryAxisReferences.cardUid },
+                label: localizationManager.getDisplayName("Visual_XAxis")
             }
         ];
     }
