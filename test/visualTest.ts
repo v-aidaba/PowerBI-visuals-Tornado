@@ -834,7 +834,13 @@ describe("TornadoChart", () => {
 
         it("should not use fill style", (done) => {
             visualBuilder.updateRenderTimeout(dataView, () => {
-                expect(isColorAppliedToElements(columns, undefined, "fill")).toBe(false);
+                // In high-contrast mode the bar fill (gradient) uses the theme background color, not data colors
+                const stopColors: string[] = Array.from(visualBuilder.gradients)
+                    .flatMap((gradient: SVGElement) => Array.from(gradient.querySelectorAll("stop")))
+                    .map((stop: Element) => stop.getAttribute("stop-color") || "");
+
+                expect(stopColors.length).toBeGreaterThan(0);
+                stopColors.forEach((stopColor: string) => assertColorsMatch(stopColor, backgroundColor));
                 done();
             });
         });
