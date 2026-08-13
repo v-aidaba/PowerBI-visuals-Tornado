@@ -1,6 +1,6 @@
 {
   "name": "@microsoft/powerbi-visuals-tornadochart",
-  "version": "3.2.0.0",
+  "version": "3.2.2.0",
   "author": {
     "name": "Microsoft",
     "email": "pbicvsupport@microsoft.com"
@@ -40,7 +40,7 @@
     "less": "^4.6.7",
     "less-loader": "^13.0.0",
     "playwright-chromium": "^1.61.1",
-    "powerbi-visuals-tools": "^7.1.1",
+    "powerbi-visuals-tools": "^7.2.1",
     "powerbi-visuals-utils-testutils": "7.0.1",
     "style-loader": "4.0.0",
     "stylelint": "^17.14.0",
@@ -59,17 +59,17 @@
     "d3-array": "^3.2.4",
     "d3-brush": "^3.0.0",
     "d3-selection": "^3.0.0",
-    "eslint": "^9.39.4",
+    "eslint": "^10.8.1",
     "eslint-plugin-powerbi-visuals": "^1.1.1",
-    "powerbi-visuals-api": "^5.11.0",
+    "powerbi-visuals-api": "^5.11.1",
     "powerbi-visuals-utils-chartutils": "8.3.0",
-    "powerbi-visuals-utils-colorutils": "6.0.6",
+    "powerbi-visuals-utils-colorutils": "7.0.0",
     "powerbi-visuals-utils-dataviewutils": "7.0.0",
     "powerbi-visuals-utils-formattingmodel": "^7.1.0",
-    "powerbi-visuals-utils-formattingutils": "6.1.2",
+    "powerbi-visuals-utils-formattingutils": "7.0.0",
     "powerbi-visuals-utils-onobjectutils": "^6.0.3",
     "powerbi-visuals-utils-svgutils": "7.0.0",
-    "powerbi-visuals-utils-tooltiputils": "6.0.4",
+    "powerbi-visuals-utils-tooltiputils": "6.0.5",
     "powerbi-visuals-utils-typeutils": "7.0.0"
   }
 }

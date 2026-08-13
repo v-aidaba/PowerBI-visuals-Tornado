@@ -1,3 +1,7 @@
+## 3.2.2.0
+* Added new translations
+* Update packages
+
 ## 3.2.0.0
 ### New Features
 * Added bar formatting options: border, corner radius, and spacing between bars
