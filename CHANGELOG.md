@@ -1,6 +1,6 @@
 ## 3.2.2.0
 * Added new translations
-* Update packages
+* Updated packages
 
 ## 3.2.0.0
 ### New Features
