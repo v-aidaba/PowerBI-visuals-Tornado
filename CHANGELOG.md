@@ -1,4 +1,4 @@
-## 3.2.2.0
+## 3.2.1.0
 * Added new translations
 * Updated packages
 
