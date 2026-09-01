@@ -69,7 +69,7 @@ class NegativeBarsCardSettings extends Card {
         name: "show",
         displayName: "Show",
         displayNameKey: "Visual_Show",
-        value: true
+        value: false
     });
 
     topLevelSlice? = this.show;
@@ -85,7 +85,7 @@ class NegativeBarsCardSettings extends Card {
         name: "transparency",
         displayName: "Transparency (%)",
         displayNameKey: "Visual_Transparency",
-        value: 0,
+        value: 100,
         options: {
             minValue: {
                 type: powerbiVisualsApi.visuals.ValidatorType.Min,
@@ -109,7 +109,7 @@ class NegativeBarsCardSettings extends Card {
         name: "borderWidth",
         displayName: "Border width (px)",
         displayNameKey: "Visual_BorderWidth",
-        value: 0,
+        value: 2,
         options: {
             minValue: {
                 type: powerbiVisualsApi.visuals.ValidatorType.Min,

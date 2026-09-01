@@ -485,6 +485,74 @@ describe("TornadoChart", () => {
                 (<number[]>dataView.categorical!.values![0].values)[0] = -500;
             });
 
+            it("are hidden by default", () => {
+                dataView.metadata.objects = {};
+
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const renderedNegativeValues: number[] = Array.from(visualBuilder.columns)
+                    .map((element: SVGPathElement) => (<TornadoChartPoint>(<any>element).__data__).value)
+                    .filter((value: number) => value < 0);
+                expect(renderedNegativeValues).toEqual([]);
+            });
+
+            it("scale proportionally to absolute magnitude", () => {
+                const values: number[] = <number[]>dataView.categorical!.values![0].values;
+                values.splice(0, values.length, -120000, -45000, 0, 45000, 120000, 60000);
+
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const renderedPoints: TornadoChartPoint[] = Array.from(visualBuilder.columns)
+                    .map((element: SVGPathElement) => <TornadoChartPoint>(<any>element).__data__);
+                const mostNegative: TornadoChartPoint = renderedPoints.find((point: TornadoChartPoint) => point.value === -120000)!;
+                const smallerNegative: TornadoChartPoint = renderedPoints.find((point: TornadoChartPoint) => point.value === -45000)!;
+                const matchingPositive: TornadoChartPoint = renderedPoints.find((point: TornadoChartPoint) => point.value === 120000)!;
+
+                expect(mostNegative.width).toBeGreaterThan(0);
+                expect(mostNegative.width! / smallerNegative.width!).toBeCloseTo(120000 / 45000, 5);
+                expect(mostNegative.width).toBeCloseTo(matchingPositive.width!, 5);
+            });
+
+            it("use transparent fill and a series-colored outline when enabled", () => {
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const negativeColumn: SVGPathElement = Array.from(visualBuilder.columns)
+                    .find((element: SVGPathElement) => (<TornadoChartPoint>(<any>element).__data__).value < 0)!;
+                const negativePoint: TornadoChartPoint = <TornadoChartPoint>(<any>negativeColumn).__data__;
+                const styles: CSSStyleDeclaration = getComputedStyle(negativeColumn);
+
+                expect(parseFloat(styles.getPropertyValue("fill-opacity"))).toBeCloseTo(0, 5);
+                expect(styles.getPropertyValue("stroke-width")).toBe("2px");
+                expect(negativeColumn.style.stroke).toBe(negativePoint.color);
+            });
+
+            it("show readable labels when the default fill is transparent", () => {
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const negativeLabel: HTMLElement = Array.from(visualBuilder.labels)
+                    .find((element: HTMLElement) => (<TornadoChartPoint>(<any>element).__data__).value < 0)!;
+                const labelText: SVGTextElement = negativeLabel.querySelector("text.label-text")!;
+                const outsideFill = visualBuilder.instance.formattingSettings.dataLabels.labelsValuesGroup.outsideFill.value.value;
+
+                expect(labelText.textContent).toBeTruthy();
+                expect(labelText.getAttribute("fill")).toBe(outsideFill);
+            });
+
+            it("use the configured negative label fill", () => {
+                const color = "#123456";
+                dataView.metadata.objects!.labels = {
+                    negativeFill: getSolidColorStructuralObject(color)
+                };
+
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const negativeLabel: HTMLElement = Array.from(visualBuilder.labels)
+                    .find((element: HTMLElement) => (<TornadoChartPoint>(<any>element).__data__).value < 0)!;
+                const labelText: SVGTextElement = negativeLabel.querySelector("text.label-text")!;
+
+                expect(labelText.getAttribute("fill")).toBe(color);
+            });
+
             it("show", (done) => {
                 visualBuilder.updateRenderTimeout(dataView, () => {
                     expect(dataView.metadata.objects!["negativeBars"].show).toBe(true);
@@ -562,7 +630,6 @@ describe("TornadoChart", () => {
             });
 
             it("cornerRadius", () => {
-                // Ensure a negative bar with non-zero width (the most negative value maps to zero width)
                 (<number[]>dataView.categorical!.values![0].values)[0] = -300;
                 (<number[]>dataView.categorical!.values![0].values)[1] = -900;
 
