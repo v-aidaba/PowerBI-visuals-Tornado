@@ -279,10 +279,26 @@ export enum LabelDisplayMode {
     ValueAndPercentage = "valueAndPercentage",
 }
 
+export enum LabelPosition {
+    Automatic = "automatic",
+    OutsideEnd = "outsideEnd",
+    InsideEnd = "insideEnd",
+    InsideCenter = "insideCenter",
+    InsideBase = "insideBase",
+}
+
 export const labelContentOptions: IEnumMemberWithDisplayNameKey[] = [
     { value: LabelDisplayMode.Value, displayName: "Value", key: "Visual_Value" },
     { value: LabelDisplayMode.Percentage, displayName: "Percentage", key: "Visual_Percentage" },
     { value: LabelDisplayMode.ValueAndPercentage, displayName: "Value (%)", key: "Visual_ValueAndPercentage" },
+];
+
+export const labelPositionOptions: IEnumMemberWithDisplayNameKey[] = [
+    { value: LabelPosition.Automatic, displayName: "Automatic", key: "Visual_LabelPosition_Automatic" },
+    { value: LabelPosition.OutsideEnd, displayName: "Outside end", key: "Visual_LabelPosition_OutsideEnd" },
+    { value: LabelPosition.InsideEnd, displayName: "Inside end", key: "Visual_LabelPosition_InsideEnd" },
+    { value: LabelPosition.InsideCenter, displayName: "Inside center", key: "Visual_LabelPosition_InsideCenter" },
+    { value: LabelPosition.InsideBase, displayName: "Inside base", key: "Visual_LabelPosition_InsideBase" },
 ];
 
 class LabelsOptionsGroup extends Card {
@@ -294,10 +310,18 @@ class LabelsOptionsGroup extends Card {
         value: labelContentOptions[0]
     });
 
+    labelPosition = new formattingSettings.ItemDropdown({
+        name: "labelPosition",
+        displayName: "Label position",
+        displayNameKey: "Visual_LabelPosition",
+        items: labelPositionOptions,
+        value: labelPositionOptions[0]
+    });
+
     name: string = "options";
     displayName: string = "Options";
     displayNameKey: string = "Visual_Options";
-    slices: formattingSettings.Slice[] = [this.displayFormat];
+    slices: formattingSettings.Slice[] = [this.displayFormat, this.labelPosition];
 }
 
 class LabelsValuesGroup extends Card {
@@ -634,6 +658,7 @@ export class TornadoChartSettingsModel extends Model {
         this.setLocalizedDisplayName(positionOptions, localizationManager);
         this.setLocalizedDisplayName(categoryPositionOptions, localizationManager);
         this.setLocalizedDisplayName(labelContentOptions, localizationManager);
+        this.setLocalizedDisplayName(labelPositionOptions, localizationManager);
     }   
 
     public setLocalizedDisplayName(options: IEnumMemberWithDisplayNameKey[], localizationManager: ILocalizationManager) {

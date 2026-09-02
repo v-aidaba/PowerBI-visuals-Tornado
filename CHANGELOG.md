@@ -1,3 +1,6 @@
+## 3.2.2
+* Added Automatic, Outside end, Inside end, Inside center, and Inside base data-label position options
+
 ## 3.2.1.0
 * Added new translations
 * Updated packages

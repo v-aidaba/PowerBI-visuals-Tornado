@@ -109,7 +109,7 @@ import {
 } from "./interfaces";
 import { TornadoWebBehavior } from "./TornadoWebBehavior";
 import * as tooltipBuilder from "./tooltipBuilder";
-import { TornadoChartSettingsModel, DataLabelSettings, LegendCardSettings, BaseFontControlSettings, FontDefaultOptions, TornadoObjectNames, LabelDisplayMode} from "./TornadoChartSettingsModel";
+import { TornadoChartSettingsModel, DataLabelSettings, LegendCardSettings, BaseFontControlSettings, FontDefaultOptions, TornadoObjectNames, LabelDisplayMode, LabelPosition } from "./TornadoChartSettingsModel";
 import { TornadoOnObjectService } from "./onObject/TornadoOnObjectService";
 import { titleEditSubSelection } from "./onObject/references";
 
@@ -493,6 +493,57 @@ export class TornadoChart implements IVisual {
             : this.allColumnsWidth;
     }
 
+    private get labelPosition(): LabelPosition {
+        const value = this.formattingSettings.dataLabels.labelsOptionsGroup.labelPosition?.value?.value?.toString();
+
+        switch (value) {
+            case LabelPosition.OutsideEnd:
+                return LabelPosition.OutsideEnd;
+            case LabelPosition.InsideEnd:
+                return LabelPosition.InsideEnd;
+            case LabelPosition.InsideCenter:
+                return LabelPosition.InsideCenter;
+            case LabelPosition.InsideBase:
+                return LabelPosition.InsideBase;
+            case LabelPosition.Automatic:
+            default:
+                return LabelPosition.Automatic;
+        }
+    }
+
+    private get outsideLabelReserve(): number {
+        if (this.labelPosition !== LabelPosition.OutsideEnd
+            || !this.formattingSettings.dataLabels.show.value
+            || !this.dataView?.dataPoints?.length
+            || this.dataView.labelHeight >= this.heightColumn) {
+            return 0;
+        }
+
+        const isNormalized = this.formattingSettings?.categoryAxis?.normalize?.value ?? false;
+        const showNegativeBars = this.formattingSettings?.negativeBars?.show?.value ?? true;
+        const labelFormatter = this.dataView.labelFormatter;
+        const font = this.formattingSettings.dataLabels.labelsValuesGroup.font;
+        const visibleDataPoints = showNegativeBars
+            ? this.dataView.dataPoints
+            : this.dataView.dataPoints.filter(dataPoint => dataPoint.value >= 0);
+
+        if (!visibleDataPoints.length) {
+            return 0;
+        }
+
+        let maximumLabelWidth = 0;
+
+        for (const dataPoint of visibleDataPoints) {
+            const minForWidth = isNormalized ? dataPoint.seriesMin : dataPoint.minValue;
+            const maxForWidth = isNormalized ? dataPoint.seriesMax : dataPoint.maxValue;
+            const percentage = this.getColumnWidth(dataPoint.value, minForWidth, maxForWidth, 1) * 100;
+            const labelText = this.getLabelText(dataPoint.value, dataPoint.formatString, labelFormatter, percentage);
+            maximumLabelWidth = Math.max(maximumLabelWidth, TornadoChart.getTextData(labelText, font, true, false).width);
+        }
+
+        return Math.min(maximumLabelWidth + this.leftLabelMargin, this.columnWidth / 3);
+    }
+
     private get centerLineOffset(): number {
         const showCenterLine = this.formattingSettings?.centerLine?.show?.value ?? true;
         const lineWidth = this.formattingSettings?.centerLine?.width?.value ?? 1;
@@ -840,6 +891,8 @@ export class TornadoChart implements IVisual {
         const maxSeries: boolean = this.dataView.series.length === TornadoChart.MaxSeries;
         const isNormalized = this.formattingSettings?.categoryAxis?.normalize?.value ?? false;
         const centerOffset = this.centerLineOffset;
+        const outsideLabelReserve = this.outsideLabelReserve;
+        const availableColumnWidth = Math.max(0, this.columnWidth - outsideLabelReserve);
 
         for (let i: number = 0; i < dataPoints.length; i++) {
             const dataPoint: TornadoChartPoint = dataPoints[i];
@@ -848,15 +901,16 @@ export class TornadoChart implements IVisual {
             const shiftToRight: boolean = i > categoriesLength - 1;
             const minForWidth = isNormalized ? dataPoint.seriesMin : dataPoint.minValue;
             const maxForWidth = isNormalized ? dataPoint.seriesMax : dataPoint.maxValue;
-            const widthOfColumn: number = this.getColumnWidth(dataPoint.value, minForWidth, maxForWidth, this.columnWidth);
-            let dx: number = (this.columnWidth - widthOfColumn) * Number(shiftToMiddle) + (this.columnWidth + centerOffset * 2) * Number(shiftToRight)/* - scrollBarWidth*/;
+            const widthOfColumn: number = this.getColumnWidth(dataPoint.value, minForWidth, maxForWidth, availableColumnWidth);
+            let dx: number = (outsideLabelReserve + availableColumnWidth - widthOfColumn) * Number(shiftToMiddle)
+                + (this.columnWidth + centerOffset * 2) * Number(shiftToRight)/* - scrollBarWidth*/;
             dx = Math.max(dx, 0);
 
             const highlighted: boolean = this.dataView.hasHighlights && dataPoint.highlight;
             const highlightOffset: number = highlighted ? heightColumn * (1 - TornadoChart.HighlightedShapeFactor) / 2 : 0;
             const dy: number = (heightColumn + this.columnPadding) * (i % categoriesLength) + highlightOffset;
 
-            const percentage = this.columnWidth > 0 ? (widthOfColumn / this.columnWidth) * 100 : 0;
+            const percentage = availableColumnWidth > 0 ? (widthOfColumn / availableColumnWidth) * 100 : 0;
 
             const label: LabelData = this.getLabelData(
                 dataPoint.value,
@@ -1016,33 +1070,34 @@ export class TornadoChart implements IVisual {
 
         const fontSize: number = this.formattingSettings.dataLabels.labelsValuesGroup.font.fontSize.value;
         const displayMode: string = this.formattingSettings.dataLabels.labelsOptionsGroup.displayFormat?.value?.value?.toString() ?? LabelDisplayMode.Value;
-        const precision: number = TornadoChart.getPrecision(this.formattingSettings.dataLabels);
-
-        let dx: number,
-            color: string = this.formattingSettings.dataLabels.labelsValuesGroup.insideFill.value.value || this.themeBackgroundColor;
+        const labelPosition = this.labelPosition;
+        const insideColor: string = this.formattingSettings.dataLabels.labelsValuesGroup.insideFill.value.value || this.themeBackgroundColor;
+        const outsideColor: string = this.formattingSettings.dataLabels.labelsValuesGroup.outsideFill.value.value || this.themeForegroundColor;
 
         const maxOutsideLabelWidth: number = isColumnPositionLeft
             ? dxColumn - this.leftLabelMargin
             : this.allColumnsWidth - (dxColumn + columnWidth + this.leftLabelMargin);
-        const maxLabelWidth: number = Math.max(maxOutsideLabelWidth, columnWidth - this.leftLabelMargin);
-
-        // Format the value based on the selected display mode
-        const formattedValue = labelFormatter.getLabelValueFormatter!(formatStringProp).format(value);
-        const formattedPercentage = percentage.toFixed(precision) + "%";
-
-        let labelText: string;
-        switch (displayMode) {
-            case LabelDisplayMode.Percentage:
-                labelText = formattedPercentage;
+        const maxInsideLabelWidth: number = columnWidth - TornadoChart.LabelPadding * 2;
+        let maxLabelWidth: number;
+        switch (labelPosition) {
+            case LabelPosition.OutsideEnd:
+                maxLabelWidth = maxOutsideLabelWidth;
                 break;
-            case LabelDisplayMode.ValueAndPercentage:
-                labelText = `${formattedValue} (${formattedPercentage})`;
+            case LabelPosition.InsideEnd:
+            case LabelPosition.InsideCenter:
+            case LabelPosition.InsideBase:
+                maxLabelWidth = maxInsideLabelWidth;
                 break;
-            case LabelDisplayMode.Value:
+            case LabelPosition.Automatic:
             default:
-                labelText = formattedValue;
+                // Preserve the original placement and truncation behavior when
+                // the setting is absent or Automatic is selected.
+                maxLabelWidth = Math.max(maxOutsideLabelWidth, columnWidth - this.leftLabelMargin);
                 break;
         }
+        maxLabelWidth = Math.max(0, maxLabelWidth);
+
+        const labelText = this.getLabelText(value, formatStringProp, labelFormatter, percentage, displayMode);
 
         const textProperties: TextProperties = {
             fontFamily: this.formattingSettings.dataLabels.labelsValuesGroup.font.fontFamily.value,
@@ -1052,31 +1107,91 @@ export class TornadoChart implements IVisual {
         const valueAfterValueFormatter: string = textMeasurementService.getTailoredTextOrDefault(textProperties, maxLabelWidth);
         const textDataAfterValueFormatter: TextData = TornadoChart.getTextData(valueAfterValueFormatter, this.formattingSettings.dataLabels.labelsValuesGroup.font, true, false);
         const negativeFill = this.formattingSettings.dataLabels.labelsValuesGroup.negativeFill?.value?.value;
-
-        if (columnWidth > textDataAfterValueFormatter.width + TornadoChart.LabelPadding) {
-            dx = dxColumn + columnWidth / 2 - textDataAfterValueFormatter.width / 2;
-            if (value < 0 && negativeFill) {
-                color = negativeFill;
-            }
-        } else {
-            if (isColumnPositionLeft) {
-                dx = dxColumn - this.leftLabelMargin - textDataAfterValueFormatter.width;
-            } else {
-                dx = dxColumn + columnWidth + this.leftLabelMargin;
-            }
-            if (value < 0 && negativeFill) {
-                color = negativeFill;
-            } else {
-                color = this.formattingSettings.dataLabels.labelsValuesGroup.outsideFill.value.value || this.themeForegroundColor;
-            }
-        }
+        const placement = this.getLabelPlacement(
+            labelPosition,
+            dxColumn,
+            columnWidth,
+            textDataAfterValueFormatter.width,
+            isColumnPositionLeft,
+            insideColor,
+            outsideColor);
 
         return {
-            dx: dx,
+            dx: placement.dx,
             source: value,
             value: valueAfterValueFormatter,
-            color: color
+            color: value < 0 && negativeFill ? negativeFill : placement.color
         };
+    }
+
+    private getLabelPlacement(
+        labelPosition: LabelPosition,
+        dxColumn: number,
+        columnWidth: number,
+        labelWidth: number,
+        isColumnPositionLeft: boolean,
+        insideColor: string,
+        outsideColor: string): { dx: number; color: string } {
+
+        const outsideDx = isColumnPositionLeft
+            ? dxColumn - this.leftLabelMargin - labelWidth
+            : dxColumn + columnWidth + this.leftLabelMargin;
+        const clampInside = (dx: number): number => {
+            const maxDx = dxColumn + Math.max(0, columnWidth - labelWidth);
+            return Math.max(dxColumn, Math.min(dx, maxDx));
+        };
+
+        switch (labelPosition) {
+            case LabelPosition.OutsideEnd:
+                return { dx: outsideDx, color: outsideColor };
+            case LabelPosition.InsideEnd:
+                return {
+                    dx: clampInside(isColumnPositionLeft
+                        ? dxColumn + TornadoChart.LabelPadding
+                        : dxColumn + columnWidth - labelWidth - TornadoChart.LabelPadding),
+                    color: insideColor
+                };
+            case LabelPosition.InsideCenter:
+                return {
+                    dx: clampInside(dxColumn + columnWidth / 2 - labelWidth / 2),
+                    color: insideColor
+                };
+            case LabelPosition.InsideBase:
+                return {
+                    dx: clampInside(isColumnPositionLeft
+                        ? dxColumn + columnWidth - labelWidth - TornadoChart.LabelPadding
+                        : dxColumn + TornadoChart.LabelPadding),
+                    color: insideColor
+                };
+            case LabelPosition.Automatic:
+            default:
+                return columnWidth > labelWidth + TornadoChart.LabelPadding
+                    ? { dx: dxColumn + columnWidth / 2 - labelWidth / 2, color: insideColor }
+                    : { dx: outsideDx, color: outsideColor };
+        }
+    }
+
+    private getLabelText(
+        value: number,
+        formatStringProp: string,
+        labelFormatter: TornadoChartLabelFormatter,
+        percentage: number,
+        displayMode: string = this.formattingSettings.dataLabels.labelsOptionsGroup.displayFormat?.value?.value?.toString()
+            ?? LabelDisplayMode.Value): string {
+
+        const precision = TornadoChart.getPrecision(this.formattingSettings.dataLabels);
+        const formattedValue = labelFormatter.getLabelValueFormatter!(formatStringProp).format(value);
+        const formattedPercentage = percentage.toFixed(precision) + "%";
+
+        switch (displayMode) {
+            case LabelDisplayMode.Percentage:
+                return formattedPercentage;
+            case LabelDisplayMode.ValueAndPercentage:
+                return `${formattedValue} (${formattedPercentage})`;
+            case LabelDisplayMode.Value:
+            default:
+                return formattedValue;
+        }
     }
 
     private renderAxes(isFormatMode: boolean): void {
