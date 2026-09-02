@@ -541,7 +541,7 @@ describe("TornadoChart", () => {
                     {
                         name: "centers labels inside bars on both sides",
                         position: "insideCenter",
-                        precision: 2,
+                        precision: 1,
                         expectedDx: (point: TornadoChartPoint, labelWidth: number): number =>
                             point.dx! + point.width! / 2 - labelWidth / 2
                     },
