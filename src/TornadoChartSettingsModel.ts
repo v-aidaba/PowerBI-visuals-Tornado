@@ -83,10 +83,12 @@ class NegativeBarsCardSettings extends Card {
 
     transparency = new formattingSettings.Slider({
         name: "transparency",
-        displayName: "Transparency (%)",
+        displayName: "Transparency",
         displayNameKey: "Visual_Transparency",
         value: 100,
         options: {
+            unitSymbol: "%",
+            unitSymbolAfterInput: true,
             minValue: {
                 type: powerbiVisualsApi.visuals.ValidatorType.Min,
                 value: 0,
@@ -107,10 +109,12 @@ class NegativeBarsCardSettings extends Card {
 
     borderWidth = new formattingSettings.Slider({
         name: "borderWidth",
-        displayName: "Border width (px)",
+        displayName: "Border width",
         displayNameKey: "Visual_BorderWidth",
         value: 2,
         options: {
+            unitSymbol: "px",
+            unitSymbolAfterInput: true,
             minValue: {
                 type: powerbiVisualsApi.visuals.ValidatorType.Min,
                 value: 0,
@@ -124,10 +128,12 @@ class NegativeBarsCardSettings extends Card {
 
     cornerRadius = new formattingSettings.Slider({
         name: "cornerRadius",
-        displayName: "Rounded corners (px)",
+        displayName: "Rounded corners",
         displayNameKey: "Visual_CornerRadius",
         value: 0,
         options: {
+            unitSymbol: "px",
+            unitSymbolAfterInput: true,
             minValue: {
                 type: powerbiVisualsApi.visuals.ValidatorType.Min,
                 value: 0,
@@ -155,10 +161,12 @@ class BarAppearanceCardSettings extends Card {
 
     borderWidth = new formattingSettings.Slider({
         name: "borderWidth",
-        displayName: "Border width (px)",
+        displayName: "Border width",
         displayNameKey: "Visual_BorderWidth",
         value: 0,
         options: {
+            unitSymbol: "px",
+            unitSymbolAfterInput: true,
             minValue: {
                 type: powerbiVisualsApi.visuals.ValidatorType.Min,
                 value: 0,
@@ -172,10 +180,12 @@ class BarAppearanceCardSettings extends Card {
 
     cornerRadius = new formattingSettings.Slider({
         name: "cornerRadius",
-        displayName: "Rounded corners (px)",
+        displayName: "Rounded corners",
         displayNameKey: "Visual_CornerRadius",
         value: 0,
         options: {
+            unitSymbol: "px",
+            unitSymbolAfterInput: true,
             minValue: {
                 type: powerbiVisualsApi.visuals.ValidatorType.Min,
                 value: 0,
@@ -189,10 +199,12 @@ class BarAppearanceCardSettings extends Card {
 
     barSpacing = new formattingSettings.Slider({
         name: "barSpacing",
-        displayName: "Space between bars (%)",
+        displayName: "Space between bars",
         displayNameKey: "Visual_BarSpacing",
         value: 0,
         options: {
+            unitSymbol: "%",
+            unitSymbolAfterInput: true,
             minValue: {
                 type: powerbiVisualsApi.visuals.ValidatorType.Min,
                 value: 0,
@@ -229,10 +241,12 @@ class CenterLineCardSettings extends Card {
 
     width = new formattingSettings.Slider({
         name: "width",
-        displayName: "Width (px)",
+        displayName: "Width",
         displayNameKey: "Visual_Width",
         value: 1,
         options: {
+            unitSymbol: "px",
+            unitSymbolAfterInput: true,
             minValue: {
                 type: powerbiVisualsApi.visuals.ValidatorType.Min,
                 value: 1,

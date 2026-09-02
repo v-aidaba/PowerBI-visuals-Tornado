@@ -269,6 +269,7 @@ export class TornadoChart implements IVisual {
                     seriesMax: seriesMax,
                     formatString,
                     color: dataPointColor,
+                    seriesColor: parsedSeries.fill,
                     selected: false,
                     identity,
                     categoryIndex: i,
@@ -915,7 +916,7 @@ export class TornadoChart implements IVisual {
             .style("stroke", (p: TornadoChartPoint) => {
                 let strokeColor: string;
                 if (p.value < 0) {
-                    strokeColor = this.formattingSettings?.negativeBars?.borderColor?.value?.value || p.color;
+                    strokeColor = this.formattingSettings?.negativeBars?.borderColor?.value?.value || p.seriesColor;
                 } else {
                     const borderColor = this.formattingSettings?.barAppearance?.borderColor?.value?.value;
                     strokeColor = borderColor || p.color;
