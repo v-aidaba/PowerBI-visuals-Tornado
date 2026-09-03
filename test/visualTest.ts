@@ -536,7 +536,9 @@ describe("TornadoChart", () => {
 
                 expect(parseFloat(styles.getPropertyValue("fill-opacity"))).toBeCloseTo(0, 5);
                 expect(styles.getPropertyValue("stroke-width")).toBe("2px");
-                expect(negativeColumn.style.stroke).toBe(negativePoint.seriesColor);
+                expect(areColorsEqual(
+                    styles.getPropertyValue("stroke"),
+                    negativePoint.seriesColor)).toBe(true);
             });
 
             it("show readable labels when the default fill is transparent", () => {
@@ -602,7 +604,9 @@ describe("TornadoChart", () => {
                     .map((stop: Element) => stop.getAttribute("stop-color") || "");
 
                 expect(stopColors.some((stopColor: string) => areColorsEqual(stopColor, color))).toBe(true);
-                expect(negativeColumn.style.stroke).toBe(negativePoint.seriesColor);
+                expect(areColorsEqual(
+                    getComputedStyle(negativeColumn).getPropertyValue("stroke"),
+                    negativePoint.seriesColor)).toBe(true);
             });
 
             it("transparency", (done) => {
