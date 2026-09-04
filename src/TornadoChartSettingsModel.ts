@@ -294,48 +294,48 @@ export enum LabelDisplayMode {
 }
 
 export enum LabelPosition {
-    Automatic = "automatic",
+    Auto = "auto",
     OutsideEnd = "outsideEnd",
     InsideEnd = "insideEnd",
     InsideCenter = "insideCenter",
     InsideBase = "insideBase",
 }
 
-export const labelContentOptions: IEnumMemberWithDisplayNameKey[] = [
+export const contentOptions: IEnumMemberWithDisplayNameKey[] = [
     { value: LabelDisplayMode.Value, displayName: "Value", key: "Visual_Value" },
     { value: LabelDisplayMode.Percentage, displayName: "Percentage", key: "Visual_Percentage" },
     { value: LabelDisplayMode.ValueAndPercentage, displayName: "Value (%)", key: "Visual_ValueAndPercentage" },
 ];
 
-export const labelPositionOptions: IEnumMemberWithDisplayNameKey[] = [
-    { value: LabelPosition.Automatic, displayName: "Automatic", key: "Visual_LabelPosition_Automatic" },
-    { value: LabelPosition.OutsideEnd, displayName: "Outside end", key: "Visual_LabelPosition_OutsideEnd" },
-    { value: LabelPosition.InsideEnd, displayName: "Inside end", key: "Visual_LabelPosition_InsideEnd" },
-    { value: LabelPosition.InsideCenter, displayName: "Inside center", key: "Visual_LabelPosition_InsideCenter" },
-    { value: LabelPosition.InsideBase, displayName: "Inside base", key: "Visual_LabelPosition_InsideBase" },
+export const dataLabelPositionOptions: IEnumMemberWithDisplayNameKey[] = [
+    { value: LabelPosition.Auto, displayName: "Auto", key: "Visual_Position_Auto" },
+    { value: LabelPosition.OutsideEnd, displayName: "Outside end", key: "Visual_Position_OutsideEnd" },
+    { value: LabelPosition.InsideEnd, displayName: "Inside end", key: "Visual_Position_InsideEnd" },
+    { value: LabelPosition.InsideCenter, displayName: "Inside center", key: "Visual_Position_InsideCenter" },
+    { value: LabelPosition.InsideBase, displayName: "Inside base", key: "Visual_Position_InsideBase" },
 ];
 
 class LabelsOptionsGroup extends Card {
     displayFormat = new formattingSettings.ItemDropdown({
         name: "displayFormat",
-        displayName: "Label content",
-        displayNameKey: "Visual_LabelContent",
-        items: labelContentOptions,
-        value: labelContentOptions[0]
+        displayName: "Content",
+        displayNameKey: "Visual_Content",
+        items: contentOptions,
+        value: contentOptions[0]
     });
 
-    labelPosition = new formattingSettings.ItemDropdown({
-        name: "labelPosition",
-        displayName: "Label position",
-        displayNameKey: "Visual_LabelPosition",
-        items: labelPositionOptions,
-        value: labelPositionOptions[0]
+    position = new formattingSettings.ItemDropdown({
+        name: "position",
+        displayName: "Position",
+        displayNameKey: "Visual_Position",
+        items: dataLabelPositionOptions,
+        value: dataLabelPositionOptions[0]
     });
 
     name: string = "options";
     displayName: string = "Options";
     displayNameKey: string = "Visual_Options";
-    slices: formattingSettings.Slice[] = [this.displayFormat, this.labelPosition];
+    slices: formattingSettings.Slice[] = [this.displayFormat, this.position];
 }
 
 class LabelsValuesGroup extends Card {
@@ -671,8 +671,8 @@ export class TornadoChartSettingsModel extends Model {
     setLocalizedOptions(localizationManager: ILocalizationManager) {
         this.setLocalizedDisplayName(positionOptions, localizationManager);
         this.setLocalizedDisplayName(categoryPositionOptions, localizationManager);
-        this.setLocalizedDisplayName(labelContentOptions, localizationManager);
-        this.setLocalizedDisplayName(labelPositionOptions, localizationManager);
+        this.setLocalizedDisplayName(contentOptions, localizationManager);
+        this.setLocalizedDisplayName(dataLabelPositionOptions, localizationManager);
     }   
 
     public setLocalizedDisplayName(options: IEnumMemberWithDisplayNameKey[], localizationManager: ILocalizationManager) {

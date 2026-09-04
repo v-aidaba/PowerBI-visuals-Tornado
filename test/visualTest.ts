@@ -434,7 +434,7 @@ describe("TornadoChart", () => {
                 });
             });
 
-            describe("labelPosition", () => {
+            describe("position", () => {
                 const labelPadding = 2.5;
                 const getRenderedPoints = (): TornadoChartPoint[] =>
                     Array.from(visualBuilder.labels)
@@ -464,22 +464,22 @@ describe("TornadoChart", () => {
                     dataView.metadata.objects = { labels: { show: true } };
                 });
 
-                it("uses Automatic when the property is absent", () => {
+                it("uses Auto when the property is absent", () => {
                     visualBuilder.updateFlushAllD3Transitions(dataView);
 
-                    expect(visualBuilder.instance.formattingSettings.dataLabels.labelsOptionsGroup.labelPosition.value.value)
-                        .toBe("automatic");
+                    expect(visualBuilder.instance.formattingSettings.dataLabels.labelsOptionsGroup.position.value.value)
+                        .toBe("auto");
                 });
 
                 it("does not reserve outside-label space when labels are hidden", () => {
                     (dataView.metadata.objects!).labels.show = false;
                     visualBuilder.updateFlushAllD3Transitions(dataView);
-                    const automaticWidths = getRenderedColumnWidths();
+                    const autoWidths = getRenderedColumnWidths();
 
-                    (dataView.metadata.objects!).labels.labelPosition = "outsideEnd";
+                    (dataView.metadata.objects!).labels.position = "outsideEnd";
                     visualBuilder.updateFlushAllD3Transitions(dataView);
 
-                    expect(getRenderedColumnWidths()).toEqual(automaticWidths);
+                    expect(getRenderedColumnWidths()).toEqual(autoWidths);
                 });
 
                 it("does not reserve outside-label space when all negative bars are hidden", () => {
@@ -491,15 +491,15 @@ describe("TornadoChart", () => {
                         negativeBars: { show: false }
                     };
                     visualBuilder.updateFlushAllD3Transitions(dataView);
-                    const automaticWidths = getCalculatedColumnWidths();
+                    const autoWidths = getCalculatedColumnWidths();
 
-                    (dataView.metadata.objects!).labels.labelPosition = "outsideEnd";
+                    (dataView.metadata.objects!).labels.position = "outsideEnd";
                     visualBuilder.updateFlushAllD3Transitions(dataView);
 
-                    expect(getCalculatedColumnWidths()).toEqual(automaticWidths);
+                    expect(getCalculatedColumnWidths()).toEqual(autoWidths);
                 });
 
-                it("preserves automatic inside and outside placement", () => {
+                it("preserves auto inside and outside placement", () => {
                     visualBuilder.updateFlushAllD3Transitions(dataView);
 
                     const points = getRenderedPoints();
@@ -512,7 +512,7 @@ describe("TornadoChart", () => {
                 });
 
                 it("places labels outside the end on both sides", () => {
-                    (dataView.metadata.objects!).labels.labelPosition = "outsideEnd";
+                    (dataView.metadata.objects!).labels.position = "outsideEnd";
                     visualBuilder.updateFlushAllD3Transitions(dataView);
 
                     const points = getRenderedPoints();
@@ -555,7 +555,7 @@ describe("TornadoChart", () => {
                     }
                 ].forEach(({ name, position, precision, expectedDx }) => {
                     it(name, () => {
-                        (dataView.metadata.objects!).labels.labelPosition = position;
+                        (dataView.metadata.objects!).labels.position = position;
                         visualBuilder.updateFlushAllD3Transitions(dataView);
 
                         const points = getRenderedPoints();
@@ -577,7 +577,7 @@ describe("TornadoChart", () => {
                     dataView.metadata.objects = {
                         labels: {
                             show: true,
-                            labelPosition: "outsideEnd",
+                            position: "outsideEnd",
                             negativeFill: getSolidColorStructuralObject(negativeColor)
                         },
                         negativeBars: {

@@ -2,7 +2,7 @@
 * Fixed negative bar scaling so widths are proportional to absolute values
 * Disabled negative bars by default and added transparent fill with a visible series-colored outline
 * Kept negative data labels readable when negative bars use the default transparent fill
-* Added Automatic, Outside end, Inside end, Inside center, and Inside base data-label position options
+* Added Auto, Outside end, Inside end, Inside center, and Inside base data-label position options
 
 ## 3.2.1.0
 * Added new translations

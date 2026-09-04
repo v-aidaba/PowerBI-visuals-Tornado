@@ -494,8 +494,8 @@ export class TornadoChart implements IVisual {
             : this.allColumnsWidth;
     }
 
-    private get labelPosition(): LabelPosition {
-        const value = this.formattingSettings.dataLabels.labelsOptionsGroup.labelPosition?.value?.value?.toString();
+    private get position(): LabelPosition {
+        const value = this.formattingSettings.dataLabels.labelsOptionsGroup.position?.value?.value?.toString();
 
         switch (value) {
             case LabelPosition.OutsideEnd:
@@ -506,14 +506,14 @@ export class TornadoChart implements IVisual {
                 return LabelPosition.InsideCenter;
             case LabelPosition.InsideBase:
                 return LabelPosition.InsideBase;
-            case LabelPosition.Automatic:
+            case LabelPosition.Auto:
             default:
-                return LabelPosition.Automatic;
+                return LabelPosition.Auto;
         }
     }
 
     private get outsideLabelReserve(): number {
-        if (this.labelPosition !== LabelPosition.OutsideEnd
+        if (this.position !== LabelPosition.OutsideEnd
             || !this.formattingSettings.dataLabels.show.value
             || !this.dataView?.dataPoints?.length
             || this.dataView.labelHeight >= this.heightColumn) {
@@ -1077,7 +1077,7 @@ export class TornadoChart implements IVisual {
 
         const fontSize: number = this.formattingSettings.dataLabels.labelsValuesGroup.font.fontSize.value;
         const displayMode: string = this.formattingSettings.dataLabels.labelsOptionsGroup.displayFormat?.value?.value?.toString() ?? LabelDisplayMode.Value;
-        const labelPosition = this.labelPosition;
+        const position = this.position;
         const insideColor: string = this.formattingSettings.dataLabels.labelsValuesGroup.insideFill.value.value || this.themeBackgroundColor;
         const outsideColor: string = this.formattingSettings.dataLabels.labelsValuesGroup.outsideFill.value.value || this.themeForegroundColor;
 
@@ -1086,7 +1086,7 @@ export class TornadoChart implements IVisual {
             : this.allColumnsWidth - (dxColumn + columnWidth + this.leftLabelMargin);
         const maxInsideLabelWidth: number = columnWidth - TornadoChart.LabelPadding * 2;
         let maxLabelWidth: number;
-        switch (labelPosition) {
+        switch (position) {
             case LabelPosition.OutsideEnd:
                 maxLabelWidth = maxOutsideLabelWidth;
                 break;
@@ -1095,10 +1095,10 @@ export class TornadoChart implements IVisual {
             case LabelPosition.InsideBase:
                 maxLabelWidth = maxInsideLabelWidth;
                 break;
-            case LabelPosition.Automatic:
+            case LabelPosition.Auto:
             default:
                 // Preserve the original placement and truncation behavior when
-                // the setting is absent or Automatic is selected.
+                // the setting is absent or Auto is selected.
                 maxLabelWidth = Math.max(maxOutsideLabelWidth, columnWidth - this.leftLabelMargin);
                 break;
         }
@@ -1115,7 +1115,7 @@ export class TornadoChart implements IVisual {
         const textDataAfterValueFormatter: TextData = TornadoChart.getTextData(valueAfterValueFormatter, this.formattingSettings.dataLabels.labelsValuesGroup.font, true, false);
         const negativeFill = this.formattingSettings.dataLabels.labelsValuesGroup.negativeFill?.value?.value;
         const placement = this.getLabelPlacement(
-            labelPosition,
+            position,
             dxColumn,
             columnWidth,
             textDataAfterValueFormatter.width,
@@ -1124,38 +1124,20 @@ export class TornadoChart implements IVisual {
             outsideColor);
         const negativeBarsTransparency = this.formattingSettings.negativeBars?.transparency?.value ?? 0;
         const transparentNegativeFill = value < 0 && negativeBarsTransparency === 100
-            ? this.formattingSettings.dataLabels.labelsValuesGroup.outsideFill.value.value || this.themeForegroundColor
+            ? outsideColor
             : null;
         const negativeLabelFill = negativeFill || transparentNegativeFill;
-
-        if (columnWidth > textDataAfterValueFormatter.width + TornadoChart.LabelPadding) {
-            dx = dxColumn + columnWidth / 2 - textDataAfterValueFormatter.width / 2;
-            if (value < 0 && negativeLabelFill) {
-                color = negativeLabelFill;
-            }
-        } else {
-            if (isColumnPositionLeft) {
-                dx = dxColumn - this.leftLabelMargin - textDataAfterValueFormatter.width;
-            } else {
-                dx = dxColumn + columnWidth + this.leftLabelMargin;
-            }
-            if (value < 0 && negativeLabelFill) {
-                color = negativeLabelFill;
-            } else {
-                color = this.formattingSettings.dataLabels.labelsValuesGroup.outsideFill.value.value || this.themeForegroundColor;
-            }
-        }
 
         return {
             dx: placement.dx,
             source: value,
             value: valueAfterValueFormatter,
-            color: value < 0 && negativeFill ? negativeFill : placement.color
+            color: value < 0 && negativeLabelFill ? negativeLabelFill : placement.color
         };
     }
 
     private getLabelPlacement(
-        labelPosition: LabelPosition,
+        position: LabelPosition,
         dxColumn: number,
         columnWidth: number,
         labelWidth: number,
@@ -1171,7 +1153,7 @@ export class TornadoChart implements IVisual {
             return Math.max(dxColumn, Math.min(dx, maxDx));
         };
 
-        switch (labelPosition) {
+        switch (position) {
             case LabelPosition.OutsideEnd:
                 return { dx: outsideDx, color: outsideColor };
             case LabelPosition.InsideEnd:
@@ -1193,7 +1175,7 @@ export class TornadoChart implements IVisual {
                         : dxColumn + TornadoChart.LabelPadding),
                     color: insideColor
                 };
-            case LabelPosition.Automatic:
+            case LabelPosition.Auto:
             default:
                 return columnWidth > labelWidth + TornadoChart.LabelPadding
                     ? { dx: dxColumn + columnWidth / 2 - labelWidth / 2, color: insideColor }

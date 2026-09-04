@@ -276,7 +276,7 @@ export class SubSelectionShortcutsService {
             {
                 type: VisualShortcutType.Picker,
                 ...labelsReference.displayFormat,
-                label: localizationManager.getDisplayName("Visual_LabelContent")
+                label: localizationManager.getDisplayName("Visual_Content")
             },
             {
                 type: VisualShortcutType.Toggle,

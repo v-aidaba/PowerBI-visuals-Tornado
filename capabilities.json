@@ -228,10 +228,10 @@
                         ]
                     }
                 },
-                "labelPosition": {
+                "position": {
                     "type": {
                         "enumeration": [
-                            {"value": "automatic"},
+                            {"value": "auto"},
                             {"value": "outsideEnd"},
                             {"value": "insideEnd"},
                             {"value": "insideCenter"},
