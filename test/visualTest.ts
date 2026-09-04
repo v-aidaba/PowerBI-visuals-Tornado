@@ -686,15 +686,16 @@ describe("TornadoChart", () => {
             });
 
             it("show readable labels when the default fill is transparent", () => {
+                const themeForeground: string = "#334455";
+                visualBuilder.visualHost.colorPalette.foreground = { value: themeForeground };
                 visualBuilder.updateFlushAllD3Transitions(dataView);
 
                 const negativeLabel: HTMLElement = Array.from(visualBuilder.labels)
                     .find((element: HTMLElement) => (<TornadoChartPoint>(<any>element).__data__).value < 0)!;
                 const labelText: SVGTextElement = negativeLabel.querySelector("text.label-text")!;
-                const outsideFill = visualBuilder.instance.formattingSettings.dataLabels.labelsValuesGroup.outsideFill.value.value;
 
                 expect(labelText.textContent).toBeTruthy();
-                expect(labelText.getAttribute("fill")).toBe(outsideFill);
+                assertColorsMatch(labelText.getAttribute("fill")!, themeForeground);
             });
 
             it("use the configured negative label fill", () => {
