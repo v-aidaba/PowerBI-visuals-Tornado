@@ -1,3 +1,6 @@
+## 3.2.2.0
+* Updated default series, category, legend, axis, and data-label colors to follow the active report theme
+
 ## 3.2.1.0
 * Added new translations
 * Updated packages

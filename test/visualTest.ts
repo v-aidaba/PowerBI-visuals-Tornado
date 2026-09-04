@@ -301,6 +301,150 @@ describe("TornadoChart", () => {
             });
         });
 
+        describe("Theme colors", () => {
+            const themeForeground: string = "#DDEEFF";
+            const themeBackground: string = "#112233";
+            const firstSeriesColor: string = "#AA3377";
+            const secondSeriesColor: string = "#33AA77";
+
+            const removeExplicitSeriesColors = (): void => {
+                dataView.categorical!.values!.forEach((column: DataViewValueColumn) => {
+                    if (column.source.objects?.dataPoint) {
+                        delete column.source.objects.dataPoint;
+                    }
+                });
+            };
+
+            const enableLegend = (): void => {
+                dataView.categorical!.values!.source = {
+                    displayName: "Series"
+                };
+            };
+
+            const useInsideAndOutsideLabels = (): void => {
+                dataViewBuilder.valuesValue1 = dataViewBuilder.valuesValue1.map(() => 0);
+                dataViewBuilder.valuesValue2 = dataViewBuilder.valuesValue2.map(() => 1);
+                dataViewBuilder.valuesValue3 = dataViewBuilder.valuesValue3.map(() => 2);
+                dataView = dataViewBuilder.getDataView();
+                removeExplicitSeriesColors();
+            };
+
+            beforeEach(() => {
+                visualBuilder.visualHost.colorPalette.foreground = { value: themeForeground };
+                visualBuilder.visualHost.colorPalette.background = { value: themeBackground };
+            });
+
+            it("uses report palette colors for series defaults", () => {
+                removeExplicitSeriesColors();
+                const seriesKeys: string[] = dataView.categorical!.values!
+                    .slice(0, MaxSeries)
+                    .map((column: DataViewValueColumn) => column.source.queryName!);
+
+                spyOn(visualBuilder.visualHost.colorPalette, "getColor").and.callFake((key: string) => ({
+                    value: key === seriesKeys[0] ? firstSeriesColor : secondSeriesColor
+                }));
+
+                visualBuilder.update(dataView);
+                const convertedData: TornadoChartDataView = visualBuilder.converter(dataView, visualBuilder.instance.formattingSettings);
+
+                expect(convertedData.series[0].fill).toBe(firstSeriesColor);
+                expect(convertedData.series[1].fill).toBe(secondSeriesColor);
+                expect(visualBuilder.visualHost.colorPalette.getColor).toHaveBeenCalledWith(seriesKeys[0]);
+                expect(visualBuilder.visualHost.colorPalette.getColor).toHaveBeenCalledWith(seriesKeys[1]);
+            });
+
+            it("uses theme foreground and background tokens for visual text and the center line", () => {
+                useInsideAndOutsideLabels();
+                enableLegend();
+
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                Array.from(visualBuilder.categoryText).forEach((element: Element) => {
+                    assertColorsMatch(getComputedStyle(element).getPropertyValue("fill"), themeForeground);
+                });
+                Array.from(visualBuilder.axis).forEach((element: Element) => {
+                    assertColorsMatch(getComputedStyle(element).getPropertyValue("stroke"), themeForeground);
+                });
+                Array.from(visualBuilder.legendText).forEach((element: Element) => {
+                    assertColorsMatch(getComputedStyle(element).getPropertyValue("fill"), themeForeground);
+                });
+
+                const labelsOneSideLength: number = visualBuilder.labelText.length / 2;
+                Array.from(visualBuilder.labelText).forEach((element: Element, index: number) => {
+                    const expectedColor: string = index < labelsOneSideLength ? themeForeground : themeBackground;
+                    assertColorsMatch(getComputedStyle(element).getPropertyValue("fill"), expectedColor);
+                });
+            });
+
+            it("preserves explicit author colors over theme tokens", () => {
+                const categoryColor: string = "#CC4400";
+                const legendColor: string = "#00CC44";
+                const centerLineColor: string = "#4400CC";
+                enableLegend();
+                dataView.metadata.objects = {
+                    categories: {
+                        fill: getSolidColorStructuralObject(categoryColor)
+                    },
+                    legend: {
+                        labelColor: getSolidColorStructuralObject(legendColor)
+                    },
+                    centerLine: {
+                        color: getSolidColorStructuralObject(centerLineColor)
+                    }
+                };
+
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                Array.from(visualBuilder.categoryText).forEach((element: Element) => {
+                    assertColorsMatch(getComputedStyle(element).getPropertyValue("fill"), categoryColor);
+                });
+                Array.from(visualBuilder.legendText).forEach((element: Element) => {
+                    assertColorsMatch(getComputedStyle(element).getPropertyValue("fill"), legendColor);
+                });
+                Array.from(visualBuilder.axis).forEach((element: Element) => {
+                    assertColorsMatch(getComputedStyle(element).getPropertyValue("stroke"), centerLineColor);
+                });
+            });
+
+            it("uses safe text fallbacks when theme tokens are missing", () => {
+                useInsideAndOutsideLabels();
+                enableLegend();
+                visualBuilder.visualHost.colorPalette.foreground = { value: undefined };
+                visualBuilder.visualHost.colorPalette.background = { value: undefined };
+
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                Array.from(visualBuilder.categoryText).forEach((element: Element) => {
+                    assertColorsMatch(getComputedStyle(element).getPropertyValue("fill"), "#333333");
+                });
+                Array.from(visualBuilder.legendText).forEach((element: Element) => {
+                    assertColorsMatch(getComputedStyle(element).getPropertyValue("fill"), "#333333");
+                });
+                Array.from(visualBuilder.axis).forEach((element: Element) => {
+                    assertColorsMatch(getComputedStyle(element).getPropertyValue("stroke"), "#333333");
+                });
+
+                const labelsOneSideLength: number = visualBuilder.labelText.length / 2;
+                Array.from(visualBuilder.labelText).forEach((element: Element, index: number) => {
+                    const expectedColor: string = index < labelsOneSideLength ? "#333333" : "#FFFFFF";
+                    assertColorsMatch(getComputedStyle(element).getPropertyValue("fill"), expectedColor);
+                });
+            });
+
+            it("does not change the configured legend placement", () => {
+                enableLegend();
+                dataView.metadata.objects = {
+                    legend: {
+                        position: "Bottom"
+                    }
+                };
+
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                expect(visualBuilder.element.querySelector(".legend")!.classList.contains("legend-position-bottom")).toBeTrue();
+            });
+        });
+
         describe("Data labels", () => {
             beforeEach(() => {
                 dataView.metadata.objects = {
@@ -848,6 +992,34 @@ describe("TornadoChart", () => {
         it("should use stroke style", (done) => {
             visualBuilder.updateRenderTimeout(dataView, () => {
                 expect(isColorAppliedToElements(columns, foregroundColor, "stroke")).toBe(true);
+                done();
+            });
+        });
+
+        it("should use foreground color for themed text, axis, and legend", (done) => {
+            dataView.categorical!.values!.source = {
+                displayName: "Series"
+            };
+
+            visualBuilder.updateRenderTimeout(dataView, () => {
+                const foregroundElementGroups: { name: string; elements: Element[] }[] = [
+                    { name: "category", elements: Array.from(visualBuilder.categoryText) },
+                    { name: "label", elements: Array.from(visualBuilder.labelText) },
+                    { name: "legend", elements: Array.from(visualBuilder.legendText) }
+                ];
+
+                foregroundElementGroups.forEach(({ name, elements }) => {
+                    expect(elements.length).withContext(`${name} elements should be rendered`).toBeGreaterThan(0);
+                    elements.forEach((element: Element) => {
+                        const actualColor: string = getComputedStyle(element).getPropertyValue("fill");
+                        expect(areColorsEqual(actualColor, foregroundColor))
+                            .withContext(`${name} should use the high-contrast foreground color`)
+                            .toBeTrue();
+                    });
+                });
+                Array.from(visualBuilder.axis).forEach((element: Element) => {
+                    assertColorsMatch(getComputedStyle(element).getPropertyValue("stroke"), foregroundColor);
+                });
                 done();
             });
         });

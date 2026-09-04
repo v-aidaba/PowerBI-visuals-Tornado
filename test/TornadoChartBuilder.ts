@@ -104,6 +104,10 @@ export class TornadoChartBuilder extends VisualBuilderBase<VisualClass> {
         return this.labels[0].querySelectorAll("text.label-text");
     }
 
+    public get legendText(): NodeListOf<SVGTextElement> {
+        return this.element.querySelectorAll<SVGTextElement>(".legend text.legendText, .legend text.legendTitle");
+    }
+
     public get selectedColumns(): Element[] {
         return Array.from(this.gradients).filter((element: SVGElement) => {
             const stopElement: SVGElement = element.querySelector("stop");

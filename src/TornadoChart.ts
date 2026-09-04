@@ -143,6 +143,7 @@ export class TornadoChart implements IVisual {
 
     private static DefaultForegroundColor: string = "#333333";
     private static DefaultBackgroundColor: string = "#FFFFFF";
+    private static DefaultSeriesColors: string[] = ["#01B8AA", "#374649"];
 
     public static ScrollBarWidth = 22;
     public static DefaultLabelsWidth = 3;
@@ -344,9 +345,15 @@ export class TornadoChart implements IVisual {
             categoryAxis: columnObjects["categoryAxis"] || sourceObjects["categoryAxis"] || metadataObjects["categoryAxis"]
         };
 
+        const paletteKey: string = source?.groupName != null
+            ? String(source.groupName)
+            : queryName || source?.displayName || `series-${index}`;
+        const defaultColor: string = colors?.getColor(paletteKey)?.value
+            || TornadoChart.DefaultSeriesColors[index % TornadoChart.DefaultSeriesColors.length];
+
         const fillColor = TornadoChart.getColor(
             TornadoChart.Properties.dataPoint.fill,
-            ["purple", "teal"][index],
+            defaultColor,
             mergedObjects,
             colors
         );
@@ -1104,7 +1111,7 @@ export class TornadoChart implements IVisual {
 
         // If no color is set, use high contrast color or the theme foreground color
         const effectiveLineColor = this.colorHelper.isHighContrast 
-            ? this.colorHelper.getHighContrastColor()
+            ? this.colorHelper.getHighContrastColor("foreground", lineColor)
             : (lineColor || this.themeForegroundColor);
 
         if (!effectiveLineColor) {
