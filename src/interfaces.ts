@@ -89,6 +89,7 @@ export interface TornadoChartPoint {
     height?: number;
     label?: LabelData;
     color: string;
+    seriesColor: string;
     tooltipData: VisualTooltipDataItem[];
     categoryIndex: number;
     highlight?: boolean;

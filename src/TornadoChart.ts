@@ -269,6 +269,7 @@ export class TornadoChart implements IVisual {
                     seriesMax: seriesMax,
                     formatString,
                     color: dataPointColor,
+                    seriesColor: parsedSeries.fill,
                     selected: false,
                     identity,
                     categoryIndex: i,
@@ -934,7 +935,7 @@ export class TornadoChart implements IVisual {
 
     private renderColumns(columnsData: TornadoChartPoint[], isFormatMode: boolean): void {  
         // Hide negative bars when the negative bars toggle is turned off
-        const showNegativeBars = this.formattingSettings?.negativeBars?.show?.value ?? true;
+        const showNegativeBars = this.formattingSettings?.negativeBars?.show?.value ?? false;
         const filteredColumnsData = showNegativeBars
             ? columnsData
             : columnsData.filter(p => p.value >= 0);
@@ -968,8 +969,8 @@ export class TornadoChart implements IVisual {
         columnsSelectionMerged
             .style("stroke", (p: TornadoChartPoint) => {
                 let strokeColor: string;
-                if (p.value < 0 && this.formattingSettings?.negativeBars?.borderColor?.value?.value) {
-                    strokeColor = this.formattingSettings.negativeBars.borderColor.value.value;
+                if (p.value < 0) {
+                    strokeColor = this.formattingSettings?.negativeBars?.borderColor?.value?.value || p.seriesColor;
                 } else {
                     const borderColor = this.formattingSettings?.barAppearance?.borderColor?.value?.value;
                     strokeColor = borderColor || p.color;
@@ -1049,10 +1050,16 @@ export class TornadoChart implements IVisual {
     }
 
     private getColumnWidth(value: number, minValue: number, maxValue: number, width: number): number {
-        if (minValue === maxValue) {
-            return width;
+        if (!Number.isFinite(value) || !Number.isFinite(minValue) || !Number.isFinite(maxValue) || width <= 0) {
+            return 0;
         }
-        const columnWidth = width * (value - minValue) / (maxValue - minValue);
+
+        const domainMagnitude = Math.max(Math.abs(minValue), Math.abs(maxValue));
+        if (domainMagnitude === 0) {
+            return 0;
+        }
+
+        const columnWidth = width * Math.abs(value) / domainMagnitude;
 
         // In case the user specifies a custom category axis end we limit the
         // column width to the maximum available width
@@ -1115,6 +1122,29 @@ export class TornadoChart implements IVisual {
             isColumnPositionLeft,
             insideColor,
             outsideColor);
+        const negativeBarsTransparency = this.formattingSettings.negativeBars?.transparency?.value ?? 0;
+        const transparentNegativeFill = value < 0 && negativeBarsTransparency === 100
+            ? this.formattingSettings.dataLabels.labelsValuesGroup.outsideFill.value.value || this.themeForegroundColor
+            : null;
+        const negativeLabelFill = negativeFill || transparentNegativeFill;
+
+        if (columnWidth > textDataAfterValueFormatter.width + TornadoChart.LabelPadding) {
+            dx = dxColumn + columnWidth / 2 - textDataAfterValueFormatter.width / 2;
+            if (value < 0 && negativeLabelFill) {
+                color = negativeLabelFill;
+            }
+        } else {
+            if (isColumnPositionLeft) {
+                dx = dxColumn - this.leftLabelMargin - textDataAfterValueFormatter.width;
+            } else {
+                dx = dxColumn + columnWidth + this.leftLabelMargin;
+            }
+            if (value < 0 && negativeLabelFill) {
+                color = negativeLabelFill;
+            } else {
+                color = this.formattingSettings.dataLabels.labelsValuesGroup.outsideFill.value.value || this.themeForegroundColor;
+            }
+        }
 
         return {
             dx: placement.dx,
@@ -1279,7 +1309,7 @@ export class TornadoChart implements IVisual {
 
         // When negative bars are hidden their columns aren't rendered, so suppress
         // the matching labels (kept in the join to preserve per-row alignment).
-        const showNegativeBars: boolean = this.formattingSettings?.negativeBars?.show?.value ?? true;
+        const showNegativeBars: boolean = this.formattingSettings?.negativeBars?.show?.value ?? false;
         const isLabelHidden = (p: TornadoChartPoint): boolean => !showNegativeBars && p.value < 0;
 
         const labelFontFamily : string = formattingSettings.dataLabels.labelsValuesGroup.font.fontFamily.value;
@@ -1316,7 +1346,7 @@ export class TornadoChart implements IVisual {
 
         labelSelectionMerged
             .select(TornadoChart.LabelText.selectorName)
-            .attr("fill", (p: TornadoChartPoint) => this.colorHelper.isHighContrast ? this.colorHelper.getHighContrastColor("foreground", p.color) : p.label!.color)
+            .attr("fill", (p: TornadoChartPoint) => this.colorHelper.isHighContrast ? this.colorHelper.getHighContrastColor("foreground", p.label!.color) : p.label!.color)
             .attr("font-size", fontSizeInPx)
             .attr("font-family", labelFontFamily)
             .attr("font-weight", labelFontIsBold ? "bold" : "normal")
