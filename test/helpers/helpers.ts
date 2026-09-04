@@ -35,8 +35,27 @@ export function getSolidColorStructuralObject(color: string): any {
 }
 
 export function areColorsEqual(firstColor: string, secondColor: string): boolean {
-    const firstConvertedColor: RgbColor = parseColorString(firstColor),
-        secondConvertedColor: RgbColor = parseColorString(secondColor);
+    const normalizeColor = (color: string): RgbColor | undefined => {
+        const parsedColor = parseColorString(color);
+        if (parsedColor) {
+            return parsedColor;
+        }
+
+        const element = document.createElement("span");
+        element.style.color = color;
+        document.body.appendChild(element);
+        const normalizedColor = parseColorString(getComputedStyle(element).color);
+        element.remove();
+
+        return normalizedColor;
+    };
+
+    const firstConvertedColor = normalizeColor(firstColor),
+        secondConvertedColor = normalizeColor(secondColor);
+
+    if (!firstConvertedColor || !secondConvertedColor) {
+        return false;
+    }
 
     return firstConvertedColor.R === secondConvertedColor.R
         && firstConvertedColor.G === secondConvertedColor.G

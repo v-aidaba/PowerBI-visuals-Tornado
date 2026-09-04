@@ -629,6 +629,89 @@ describe("TornadoChart", () => {
                 (<number[]>dataView.categorical!.values![0].values)[0] = -500;
             });
 
+            it("are hidden by default", () => {
+                dataView.metadata.objects = {};
+
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const renderedNegativeValues: number[] = Array.from(visualBuilder.columns)
+                    .map((element: SVGPathElement) => (<TornadoChartPoint>(<any>element).__data__).value)
+                    .filter((value: number) => value < 0);
+                expect(renderedNegativeValues).toEqual([]);
+            });
+
+            it("scale proportionally to absolute magnitude", () => {
+                dataViewBuilder.valuesValue1 = [-120000, -45000, 0, 45000, 120000, 60000];
+                dataViewBuilder.valuesValue2 = [0, 0, 0, 0, 0, 0];
+                dataView = dataViewBuilder.getDataView();
+                dataView.metadata.objects = {
+                    negativeBars: {
+                        show: true
+                    }
+                };
+
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const renderedPoints: TornadoChartPoint[] = Array.from(visualBuilder.columns)
+                    .map((element: SVGPathElement) => <TornadoChartPoint>(<any>element).__data__);
+                const mostNegative = renderedPoints.find((point: TornadoChartPoint) => point.value === -120000);
+                const smallerNegative = renderedPoints.find((point: TornadoChartPoint) => point.value === -45000);
+                const matchingPositive = renderedPoints.find((point: TornadoChartPoint) => point.value === 120000);
+
+                expect(mostNegative).toBeDefined();
+                expect(smallerNegative).toBeDefined();
+                expect(matchingPositive).toBeDefined();
+                if (!mostNegative || !smallerNegative || !matchingPositive) {
+                    return;
+                }
+
+                expect(mostNegative.width).toBeGreaterThan(0);
+                expect(mostNegative.width! / smallerNegative.width!).toBeCloseTo(120000 / 45000, 5);
+                expect(mostNegative.width).toBeCloseTo(matchingPositive.width!, 5);
+            });
+
+            it("use transparent fill and a series-colored outline when enabled", () => {
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const negativeColumn: SVGPathElement = Array.from(visualBuilder.columns)
+                    .find((element: SVGPathElement) => (<TornadoChartPoint>(<any>element).__data__).value < 0)!;
+                const negativePoint: TornadoChartPoint = <TornadoChartPoint>(<any>negativeColumn).__data__;
+                const styles: CSSStyleDeclaration = getComputedStyle(negativeColumn);
+
+                expect(parseFloat(styles.getPropertyValue("fill-opacity"))).toBeCloseTo(0, 5);
+                expect(styles.getPropertyValue("stroke-width")).toBe("2px");
+                expect(areColorsEqual(
+                    styles.getPropertyValue("stroke"),
+                    negativePoint.seriesColor)).toBe(true);
+            });
+
+            it("show readable labels when the default fill is transparent", () => {
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const negativeLabel: HTMLElement = Array.from(visualBuilder.labels)
+                    .find((element: HTMLElement) => (<TornadoChartPoint>(<any>element).__data__).value < 0)!;
+                const labelText: SVGTextElement = negativeLabel.querySelector("text.label-text")!;
+                const outsideFill = visualBuilder.instance.formattingSettings.dataLabels.labelsValuesGroup.outsideFill.value.value;
+
+                expect(labelText.textContent).toBeTruthy();
+                expect(labelText.getAttribute("fill")).toBe(outsideFill);
+            });
+
+            it("use the configured negative label fill", () => {
+                const color = "#123456";
+                dataView.metadata.objects!.labels = {
+                    negativeFill: getSolidColorStructuralObject(color)
+                };
+
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const negativeLabel: HTMLElement = Array.from(visualBuilder.labels)
+                    .find((element: HTMLElement) => (<TornadoChartPoint>(<any>element).__data__).value < 0)!;
+                const labelText: SVGTextElement = negativeLabel.querySelector("text.label-text")!;
+
+                expect(labelText.getAttribute("fill")).toBe(color);
+            });
+
             it("show", (done) => {
                 visualBuilder.updateRenderTimeout(dataView, () => {
                     expect(dataView.metadata.objects!["negativeBars"].show).toBe(true);
@@ -650,18 +733,24 @@ describe("TornadoChart", () => {
                 expect(visualBuilder.columns.length).toBeLessThan(renderedWhenShown);
             });
 
-            it("fill", (done) => {
+            it("uses the configured fill without changing the border color", () => {
                 const color: string = "#AABB11";
                 (dataView.metadata.objects!).negativeBars.fill = getSolidColorStructuralObject(color);
 
-                visualBuilder.updateRenderTimeout(dataView, () => {
-                    // The negative bar's gradient should be painted with the configured fill color
-                    const stopColorMatches: boolean = Array.from(visualBuilder.gradients)
-                        .some((gradient: SVGElement) => Array.from(gradient.querySelectorAll("stop"))
-                            .some((stop: Element) => areColorsEqual(stop.getAttribute("stop-color") || "", color)));
-                    expect(stopColorMatches).toBe(true);
-                    done();
-                });
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const negativeColumn: SVGPathElement = Array.from(visualBuilder.columns)
+                    .find((element: SVGPathElement) => (<TornadoChartPoint>(<any>element).__data__).value < 0)!;
+                const negativePoint: TornadoChartPoint = <TornadoChartPoint>(<any>negativeColumn).__data__;
+                const negativeGradient: SVGElement = Array.from(visualBuilder.gradients)
+                    .find((gradient: SVGElement) => (<TornadoChartPoint>(<any>gradient).__data__).uniqId === negativePoint.uniqId)!;
+                const stopColors = Array.from(negativeGradient.querySelectorAll("stop"))
+                    .map((stop: Element) => stop.getAttribute("stop-color") || "");
+
+                expect(stopColors.some((stopColor: string) => areColorsEqual(stopColor, color))).toBe(true);
+                expect(areColorsEqual(
+                    getComputedStyle(negativeColumn).getPropertyValue("stroke"),
+                    negativePoint.seriesColor)).toBe(true);
             });
 
             it("transparency", (done) => {
@@ -706,7 +795,6 @@ describe("TornadoChart", () => {
             });
 
             it("cornerRadius", () => {
-                // Ensure a negative bar with non-zero width (the most negative value maps to zero width)
                 (<number[]>dataView.categorical!.values![0].values)[0] = -300;
                 (<number[]>dataView.categorical!.values![0].values)[1] = -900;
 
