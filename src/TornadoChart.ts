@@ -133,6 +133,9 @@ export class TornadoChart implements IVisual {
     private static MaxSeries: number = 2;
     private static MaxPrecision: number = 17; // max number of decimals in float
     private static LabelPadding: number = 2.5;
+    private static PositionedLabelPadding: number = 8;
+    private static LabelMeasurementBuffer: number = 1;
+    private static MinimumRenderedBarWidth: number = 1;
     private static CategoryMinHeight: number = 25;
     private static HighlightedShapeFactor: number = 1;
     private static CategoryLabelMargin: number = 10;
@@ -542,7 +545,10 @@ export class TornadoChart implements IVisual {
             maximumLabelWidth = Math.max(maximumLabelWidth, TornadoChart.getTextData(labelText, font, true, false).width);
         }
 
-        return Math.min(maximumLabelWidth + this.leftLabelMargin, this.columnWidth / 3);
+        const maximumReserve = Math.max(0, this.columnWidth - TornadoChart.MinimumRenderedBarWidth);
+        return Math.min(
+            maximumLabelWidth + TornadoChart.PositionedLabelPadding + TornadoChart.LabelMeasurementBuffer,
+            maximumReserve);
     }
 
     private get centerLineOffset(): number {
@@ -1080,20 +1086,26 @@ export class TornadoChart implements IVisual {
         const position = this.position;
         const insideColor: string = this.formattingSettings.dataLabels.labelsValuesGroup.insideFill.value.value || this.themeBackgroundColor;
         const outsideColor: string = this.formattingSettings.dataLabels.labelsValuesGroup.outsideFill.value.value || this.themeForegroundColor;
+        const insideBasePadding = TornadoChart.PositionedLabelPadding;
+        const insideEndPadding = insideBasePadding + this.getRoundedEndLabelPadding(value, columnWidth);
+        const outsidePadding = position === LabelPosition.OutsideEnd
+            ? TornadoChart.PositionedLabelPadding
+            : this.leftLabelMargin;
 
         const maxOutsideLabelWidth: number = isColumnPositionLeft
-            ? dxColumn - this.leftLabelMargin
-            : this.allColumnsWidth - (dxColumn + columnWidth + this.leftLabelMargin);
-        const maxInsideLabelWidth: number = columnWidth - TornadoChart.LabelPadding * 2;
+            ? dxColumn - outsidePadding
+            : this.allColumnsWidth - (dxColumn + columnWidth + outsidePadding);
         let maxLabelWidth: number;
         switch (position) {
             case LabelPosition.OutsideEnd:
                 maxLabelWidth = maxOutsideLabelWidth;
                 break;
             case LabelPosition.InsideEnd:
-            case LabelPosition.InsideCenter:
             case LabelPosition.InsideBase:
-                maxLabelWidth = maxInsideLabelWidth;
+                maxLabelWidth = columnWidth - insideEndPadding - insideBasePadding;
+                break;
+            case LabelPosition.InsideCenter:
+                maxLabelWidth = columnWidth - insideBasePadding * 2;
                 break;
             case LabelPosition.Auto:
             default:
@@ -1121,7 +1133,10 @@ export class TornadoChart implements IVisual {
             textDataAfterValueFormatter.width,
             isColumnPositionLeft,
             insideColor,
-            outsideColor);
+            outsideColor,
+            insideEndPadding,
+            insideBasePadding,
+            outsidePadding);
         const negativeBarsTransparency = this.formattingSettings.negativeBars?.transparency?.value ?? 0;
         const transparentNegativeFill = value < 0 && negativeBarsTransparency === 100
             ? outsideColor
@@ -1136,6 +1151,17 @@ export class TornadoChart implements IVisual {
         };
     }
 
+    private getRoundedEndLabelPadding(value: number, columnWidth: number): number {
+        const configuredCornerRadius = value < 0
+            ? this.formattingSettings.negativeBars?.cornerRadius?.value
+            : this.formattingSettings.barAppearance?.cornerRadius?.value;
+
+        return Math.max(0, Math.min(
+            configuredCornerRadius ?? 0,
+            columnWidth / 2,
+            this.heightColumn / 2));
+    }
+
     private getLabelPlacement(
         position: LabelPosition,
         dxColumn: number,
@@ -1143,11 +1169,14 @@ export class TornadoChart implements IVisual {
         labelWidth: number,
         isColumnPositionLeft: boolean,
         insideColor: string,
-        outsideColor: string): { dx: number; color: string } {
+        outsideColor: string,
+        insideEndPadding: number,
+        insideBasePadding: number,
+        outsidePadding: number): { dx: number; color: string } {
 
         const outsideDx = isColumnPositionLeft
-            ? dxColumn - this.leftLabelMargin - labelWidth
-            : dxColumn + columnWidth + this.leftLabelMargin;
+            ? dxColumn - outsidePadding - labelWidth
+            : dxColumn + columnWidth + outsidePadding;
         const clampInside = (dx: number): number => {
             const maxDx = dxColumn + Math.max(0, columnWidth - labelWidth);
             return Math.max(dxColumn, Math.min(dx, maxDx));
@@ -1159,8 +1188,8 @@ export class TornadoChart implements IVisual {
             case LabelPosition.InsideEnd:
                 return {
                     dx: clampInside(isColumnPositionLeft
-                        ? dxColumn + TornadoChart.LabelPadding
-                        : dxColumn + columnWidth - labelWidth - TornadoChart.LabelPadding),
+                        ? dxColumn + insideEndPadding
+                        : dxColumn + columnWidth - labelWidth - insideEndPadding),
                     color: insideColor
                 };
             case LabelPosition.InsideCenter:
@@ -1171,8 +1200,8 @@ export class TornadoChart implements IVisual {
             case LabelPosition.InsideBase:
                 return {
                     dx: clampInside(isColumnPositionLeft
-                        ? dxColumn + columnWidth - labelWidth - TornadoChart.LabelPadding
-                        : dxColumn + TornadoChart.LabelPadding),
+                        ? dxColumn + columnWidth - labelWidth - insideBasePadding
+                        : dxColumn + insideBasePadding),
                     color: insideColor
                 };
             case LabelPosition.Auto:

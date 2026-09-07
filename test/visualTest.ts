@@ -435,7 +435,7 @@ describe("TornadoChart", () => {
             });
 
             describe("position", () => {
-                const labelPadding = 2.5;
+                const labelPadding = 8;
                 const getRenderedPoints = (): TornadoChartPoint[] =>
                     Array.from(visualBuilder.labels)
                         .map((element: HTMLElement) => <TornadoChartPoint>(<any>element).__data__)
@@ -529,6 +529,34 @@ describe("TornadoChart", () => {
                     });
                 });
 
+                it("keeps complete outside labels when the text fits beside the bars", () => {
+                    visualBuilder = new TornadoChartBuilder(260, 500);
+                    dataViewBuilder.valuesValue1 = [50, 50, 50, 50, 50, 1000];
+                    dataViewBuilder.valuesValue2 = [50, 50, 50, 50, 50, 1000];
+                    dataView = dataViewBuilder.getDataView();
+                    dataView.categorical!.values!.forEach((column: DataViewValueColumn) => {
+                        column.source.format = "#,0";
+                    });
+                    dataView.metadata.objects = {
+                        labels: {
+                            show: true,
+                            position: "outsideEnd",
+                            displayFormat: "percentage",
+                            labelPrecision: 2
+                        }
+                    };
+
+                    visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                    const maximumValueLabels = getRenderedPoints()
+                        .filter((point: TornadoChartPoint) => point.value === 1000);
+                    expect(maximumValueLabels.length).toBe(2);
+                    maximumValueLabels.forEach((point: TornadoChartPoint) => {
+                        expect(point.label!.value).toBe("100.00%");
+                        expect(point.width).toBeGreaterThan(0);
+                    });
+                });
+
                 [
                     {
                         name: "places labels inside the end on both sides",
@@ -567,6 +595,24 @@ describe("TornadoChart", () => {
                             expect(point.label!.dx).toBeGreaterThanOrEqual(point.dx!);
                             expect(point.label!.dx + labelWidth).toBeLessThanOrEqual(point.dx! + point.width! + 0.01);
                         });
+                    });
+                });
+
+                it("adds clearance between inside-end labels and rounded bar ends", () => {
+                    const cornerRadius = 8;
+                    (dataView.metadata.objects!).labels.position = "insideEnd";
+                    dataView.metadata.objects!.barAppearance = { cornerRadius };
+
+                    visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                    getRenderedPoints().forEach((point: TornadoChartPoint) => {
+                        const { labelWidth, isLeftSeries } = getLabelMetrics(point);
+                        const expectedPadding = labelPadding + Math.min(cornerRadius, point.width! / 2);
+                        const actualPadding = isLeftSeries
+                            ? point.label!.dx - point.dx!
+                            : point.dx! + point.width! - (point.label!.dx + labelWidth);
+
+                        expect(actualPadding).toBeGreaterThanOrEqual(expectedPadding - 1.5);
                     });
                 });
 
