@@ -304,6 +304,9 @@ describe("TornadoChart", () => {
         describe("Theme colors", () => {
             const themeForeground: string = "#DDEEFF";
             const themeBackground: string = "#112233";
+            const themeText: string = "#667788";
+            const themeLabel: string = "#778899";
+            const darkThemeForegroundLight: string = "#111111";
             const firstSeriesColor: string = "#AA3377";
             const secondSeriesColor: string = "#33AA77";
 
@@ -332,6 +335,9 @@ describe("TornadoChart", () => {
             beforeEach(() => {
                 visualBuilder.visualHost.colorPalette.foreground = { value: themeForeground };
                 visualBuilder.visualHost.colorPalette.background = { value: themeBackground };
+                visualBuilder.visualHost.colorPalette.foregroundNeutralSecondary = { value: themeText };
+                visualBuilder.visualHost.colorPalette.foregroundNeutralSecondaryAlt = { value: themeLabel };
+                visualBuilder.visualHost.colorPalette.foregroundLight = { value: darkThemeForegroundLight };
             });
 
             it("uses report palette colors for series defaults", () => {
@@ -339,18 +345,25 @@ describe("TornadoChart", () => {
                 const seriesKeys: string[] = dataView.categorical!.values!
                     .slice(0, MaxSeries)
                     .map((column: DataViewValueColumn) => column.source.queryName!);
+                const assignedColors = new Map<string, string>();
+                const paletteColors = [firstSeriesColor, secondSeriesColor, "#7755AA"];
 
-                spyOn(visualBuilder.visualHost.colorPalette, "getColor").and.callFake((key: string) => ({
-                    value: key === seriesKeys[0] ? firstSeriesColor : secondSeriesColor
-                }));
+                const getColorSpy = spyOn(visualBuilder.visualHost.colorPalette, "getColor").and.callFake((key: string) => {
+                    if (!assignedColors.has(key)) {
+                        assignedColors.set(key, paletteColors[assignedColors.size]);
+                    }
+
+                    return { value: assignedColors.get(key)! };
+                });
 
                 visualBuilder.update(dataView);
                 const convertedData: TornadoChartDataView = visualBuilder.converter(dataView, visualBuilder.instance.formattingSettings);
 
                 expect(convertedData.series[0].fill).toBe(firstSeriesColor);
                 expect(convertedData.series[1].fill).toBe(secondSeriesColor);
-                expect(visualBuilder.visualHost.colorPalette.getColor).toHaveBeenCalledWith(seriesKeys[0]);
-                expect(visualBuilder.visualHost.colorPalette.getColor).toHaveBeenCalledWith(seriesKeys[1]);
+                expect(getColorSpy).toHaveBeenCalledWith(seriesKeys[0]);
+                expect(getColorSpy).toHaveBeenCalledWith(seriesKeys[1]);
+                expect(getColorSpy).not.toHaveBeenCalledWith("");
             });
 
             it("uses theme foreground and background tokens for visual text and the center line", () => {
@@ -360,20 +373,31 @@ describe("TornadoChart", () => {
                 visualBuilder.updateFlushAllD3Transitions(dataView);
 
                 Array.from(visualBuilder.categoryText).forEach((element: Element) => {
-                    assertColorsMatch(getComputedStyle(element).getPropertyValue("fill"), themeForeground);
+                    assertColorsMatch(getComputedStyle(element).getPropertyValue("fill"), themeText);
                 });
                 Array.from(visualBuilder.axis).forEach((element: Element) => {
                     assertColorsMatch(getComputedStyle(element).getPropertyValue("stroke"), themeForeground);
                 });
                 Array.from(visualBuilder.legendText).forEach((element: Element) => {
-                    assertColorsMatch(getComputedStyle(element).getPropertyValue("fill"), themeForeground);
+                    assertColorsMatch(getComputedStyle(element).getPropertyValue("fill"), themeText);
                 });
 
                 const labelsOneSideLength: number = visualBuilder.labelText.length / 2;
                 Array.from(visualBuilder.labelText).forEach((element: Element, index: number) => {
-                    const expectedColor: string = index < labelsOneSideLength ? themeForeground : themeBackground;
+                    const expectedColor: string = index < labelsOneSideLength ? themeLabel : "#FFFFFF";
                     assertColorsMatch(getComputedStyle(element).getPropertyValue("fill"), expectedColor);
                 });
+            });
+
+            it("shows effective default colors in formatting cards", () => {
+                visualBuilder.update(dataView);
+
+                const formattingSettings = visualBuilder.instance.formattingSettings;
+                expect(formattingSettings.centerLine.color.value.value).toBe(themeForeground);
+                expect(formattingSettings.legend.text.labelColor.value.value).toBe(themeText);
+                expect(formattingSettings.category.fill.value.value).toBe(themeText);
+                expect(formattingSettings.dataLabels.labelsValuesGroup.insideFill.value.value).toBe("#FFFFFF");
+                expect(formattingSettings.dataLabels.labelsValuesGroup.outsideFill.value.value).toBe(themeLabel);
             });
 
             it("preserves explicit author colors over theme tokens", () => {
@@ -395,6 +419,11 @@ describe("TornadoChart", () => {
 
                 visualBuilder.updateFlushAllD3Transitions(dataView);
 
+                const formattingSettings = visualBuilder.instance.formattingSettings;
+                expect(formattingSettings.category.fill.value.value).toBe(categoryColor);
+                expect(formattingSettings.legend.text.labelColor.value.value).toBe(legendColor);
+                expect(formattingSettings.centerLine.color.value.value).toBe(centerLineColor);
+
                 Array.from(visualBuilder.categoryText).forEach((element: Element) => {
                     assertColorsMatch(getComputedStyle(element).getPropertyValue("fill"), categoryColor);
                 });
@@ -411,14 +440,17 @@ describe("TornadoChart", () => {
                 enableLegend();
                 visualBuilder.visualHost.colorPalette.foreground = { value: undefined };
                 visualBuilder.visualHost.colorPalette.background = { value: undefined };
+                visualBuilder.visualHost.colorPalette.foregroundNeutralSecondary = { value: undefined };
+                visualBuilder.visualHost.colorPalette.foregroundNeutralSecondaryAlt = { value: undefined };
+                visualBuilder.visualHost.colorPalette.foregroundLight = { value: undefined };
 
                 visualBuilder.updateFlushAllD3Transitions(dataView);
 
                 Array.from(visualBuilder.categoryText).forEach((element: Element) => {
-                    assertColorsMatch(getComputedStyle(element).getPropertyValue("fill"), "#333333");
+                    assertColorsMatch(getComputedStyle(element).getPropertyValue("fill"), "#666666");
                 });
                 Array.from(visualBuilder.legendText).forEach((element: Element) => {
-                    assertColorsMatch(getComputedStyle(element).getPropertyValue("fill"), "#333333");
+                    assertColorsMatch(getComputedStyle(element).getPropertyValue("fill"), "#666666");
                 });
                 Array.from(visualBuilder.axis).forEach((element: Element) => {
                     assertColorsMatch(getComputedStyle(element).getPropertyValue("stroke"), "#333333");
@@ -426,7 +458,7 @@ describe("TornadoChart", () => {
 
                 const labelsOneSideLength: number = visualBuilder.labelText.length / 2;
                 Array.from(visualBuilder.labelText).forEach((element: Element, index: number) => {
-                    const expectedColor: string = index < labelsOneSideLength ? "#333333" : "#FFFFFF";
+                    const expectedColor: string = index < labelsOneSideLength ? "#777777" : "#FFFFFF";
                     assertColorsMatch(getComputedStyle(element).getPropertyValue("fill"), expectedColor);
                 });
             });
@@ -588,22 +620,16 @@ describe("TornadoChart", () => {
                 };
             });
 
-            //Await usage
-            it("show", async () => {
-                visualBuilder.updateRenderTimeout(dataView, async () => {
-                    await delay(defaultAwaitTime);
-                    visualBuilder.categoryText.forEach((element) => {
-                        expect(document.body.contains(element)).toBeTruthy();
-                    });
-                    (dataView.metadata.objects!).categories.show = false;
+            it("show", () => {
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+                visualBuilder.categoryText.forEach((element) => {
+                    expect(document.body.contains(element)).toBeTruthy();
                 });
 
-                visualBuilder.updateRenderTimeout(dataView, async () => {
-                    await delay(defaultAwaitTime);
-                    visualBuilder.categoryText.forEach((element) => {
-                        expect(document.body.contains(element)).toBeFalsy();
-                    });
-                });
+                (dataView.metadata.objects!).categories.show = false;
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                expect(visualBuilder.categories.length).toBe(0);
             });
 
             it("color", () => {
@@ -626,7 +652,7 @@ describe("TornadoChart", () => {
                     }
                 };
                 // Ensure at least one negative value exists so negative-bar styling can be verified
-                (<number[]>dataView.categorical!.values![0].values)[0] = -500;
+                (<number[]>dataView.categorical!.values![0].values)[0] = -50000;
             });
 
             it("are hidden by default", () => {
@@ -685,32 +711,105 @@ describe("TornadoChart", () => {
                     negativePoint.seriesColor)).toBe(true);
             });
 
-            it("show readable labels when the default fill is transparent", () => {
-                const themeForeground: string = "#334455";
-                visualBuilder.visualHost.colorPalette.foreground = { value: themeForeground };
-                visualBuilder.updateFlushAllD3Transitions(dataView);
-
-                const negativeLabel: HTMLElement = Array.from(visualBuilder.labels)
-                    .find((element: HTMLElement) => (<TornadoChartPoint>(<any>element).__data__).value < 0)!;
-                const labelText: SVGTextElement = negativeLabel.querySelector("text.label-text")!;
-
-                expect(labelText.textContent).toBeTruthy();
-                assertColorsMatch(labelText.getAttribute("fill")!, themeForeground);
-            });
-
-            it("use the configured negative label fill", () => {
-                const color = "#123456";
-                dataView.metadata.objects!.labels = {
-                    negativeFill: getSolidColorStructuralObject(color)
+            it("uses the native outside label color over transparent negative bars", () => {
+                const nativeOutsideFill = "#777777";
+                const configuredOutsideFill = "#CC4466";
+                dataViewBuilder.valuesValue1 = [-120000, -45000, 0, 45000, 120000, 60000];
+                dataViewBuilder.valuesValue2 = [0, 0, 0, 0, 0, 0];
+                dataView = dataViewBuilder.getDataView();
+                dataView.metadata.objects = {
+                    labels: {
+                        outsideFill: getSolidColorStructuralObject(configuredOutsideFill)
+                    },
+                    negativeBars: {
+                        show: true,
+                        transparency: 100
+                    }
                 };
 
                 visualBuilder.updateFlushAllD3Transitions(dataView);
 
                 const negativeLabel: HTMLElement = Array.from(visualBuilder.labels)
-                    .find((element: HTMLElement) => (<TornadoChartPoint>(<any>element).__data__).value < 0)!;
+                    .find((element: HTMLElement) => (<TornadoChartPoint>(<any>element).__data__).value === -120000)!;
                 const labelText: SVGTextElement = negativeLabel.querySelector("text.label-text")!;
 
-                expect(labelText.getAttribute("fill")).toBe(color);
+                assertColorsMatch(labelText.getAttribute("fill")!, nativeOutsideFill);
+            });
+
+            it("uses outside fill for labels outside transparent negative bars", () => {
+                const outsideFill = "#CC4466";
+                dataViewBuilder.valuesValue1 = [-120000, -1000, 0, 45000, 120000, 60000];
+                dataViewBuilder.valuesValue2 = [0, 0, 0, 0, 0, 0];
+                dataView = dataViewBuilder.getDataView();
+                dataView.metadata.objects = {
+                    labels: {
+                        outsideFill: getSolidColorStructuralObject(outsideFill)
+                    },
+                    negativeBars: {
+                        show: true,
+                        transparency: 100
+                    }
+                };
+
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const negativeLabel: HTMLElement = Array.from(visualBuilder.labels)
+                    .find((element: HTMLElement) => (<TornadoChartPoint>(<any>element).__data__).value === -1000)!;
+                const labelText: SVGTextElement = negativeLabel.querySelector("text.label-text")!;
+
+                assertColorsMatch(labelText.getAttribute("fill")!, outsideFill);
+            });
+
+            it("uses inside fill for labels inside visible negative bars", () => {
+                const insideFill = "#55AA77";
+                dataViewBuilder.valuesValue1 = [-120000, -45000, 0, 45000, 120000, 60000];
+                dataViewBuilder.valuesValue2 = [0, 0, 0, 0, 0, 0];
+                dataView = dataViewBuilder.getDataView();
+                dataView.metadata.objects = {
+                    labels: {
+                        insideFill: getSolidColorStructuralObject(insideFill)
+                    },
+                    negativeBars: {
+                        show: true,
+                        transparency: 50
+                    }
+                };
+
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const negativeLabel: HTMLElement = Array.from(visualBuilder.labels)
+                    .find((element: HTMLElement) => (<TornadoChartPoint>(<any>element).__data__).value === -120000)!;
+                const labelText: SVGTextElement = negativeLabel.querySelector("text.label-text")!;
+
+                assertColorsMatch(labelText.getAttribute("fill")!, insideFill);
+            });
+
+            it("use the configured negative label fill", () => {
+                const negativeFill = "#123456";
+                const insideFill = "#55AA77";
+                dataViewBuilder.valuesValue1 = [-120000, 120000, 0, 0, 0, 0];
+                dataViewBuilder.valuesValue2 = [0, 0, 0, 0, 0, 0];
+                dataView = dataViewBuilder.getDataView();
+                dataView.metadata.objects = {
+                    labels: {
+                        negativeFill: getSolidColorStructuralObject(negativeFill),
+                        insideFill: getSolidColorStructuralObject(insideFill)
+                    },
+                    negativeBars: {
+                        show: true,
+                        transparency: 50
+                    }
+                };
+
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const negativeLabel: HTMLElement = Array.from(visualBuilder.labels)
+                    .find((element: HTMLElement) => (<TornadoChartPoint>(<any>element).__data__).value === -120000)!;
+                const positiveLabel: HTMLElement = Array.from(visualBuilder.labels)
+                    .find((element: HTMLElement) => (<TornadoChartPoint>(<any>element).__data__).value === 120000)!;
+
+                assertColorsMatch(negativeLabel.querySelector("text.label-text")!.getAttribute("fill")!, negativeFill);
+                assertColorsMatch(positiveLabel.querySelector("text.label-text")!.getAttribute("fill")!, insideFill);
             });
 
             it("show", (done) => {

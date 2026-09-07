@@ -143,6 +143,9 @@ export class TornadoChart implements IVisual {
 
     private static DefaultForegroundColor: string = "#333333";
     private static DefaultBackgroundColor: string = "#FFFFFF";
+    private static DefaultTextColor: string = "#666666";
+    private static DefaultLabelColor: string = "#777777";
+    private static DefaultInsideLabelColor: string = "#FFFFFF";
     private static DefaultSeriesColors: string[] = ["#01B8AA", "#374649"];
 
     public static ScrollBarWidth = 22;
@@ -383,7 +386,7 @@ export class TornadoChart implements IVisual {
         if (colorHelper.isHighContrast && convertToHighContrastMode)
             return colorHelper.getColorForMeasure(objects, "", "foreground");
 
-        return colorHelper.getColorForMeasure(objects, "");
+        return dataViewObjects.getFillColor(objects, properties, defaultColor);
     }
 
     private static getTextData(
@@ -439,6 +442,30 @@ export class TornadoChart implements IVisual {
     private get themeBackgroundColor(): string {
         const extendedPalette = this.colors as ISandboxExtendedColorPalette;
         return extendedPalette?.background?.value || TornadoChart.DefaultBackgroundColor;
+    }
+
+    private get themeTextColor(): string {
+        const extendedPalette = this.colors as ISandboxExtendedColorPalette;
+        return extendedPalette?.foregroundNeutralSecondary?.value || TornadoChart.DefaultTextColor;
+    }
+
+    private get themeLabelColor(): string {
+        const extendedPalette = this.colors as ISandboxExtendedColorPalette;
+        return extendedPalette?.foregroundNeutralSecondaryAlt?.value || TornadoChart.DefaultLabelColor;
+    }
+
+    private applyFormattingColorDefaults(): void {
+        const setDefaultColor = (colorPicker: { value: { value: string } }, defaultColor: string): void => {
+            if (!colorPicker.value.value) {
+                colorPicker.value.value = defaultColor;
+            }
+        };
+
+        setDefaultColor(this.formattingSettings.centerLine.color, this.themeForegroundColor);
+        setDefaultColor(this.formattingSettings.legend.text.labelColor, this.themeTextColor);
+        setDefaultColor(this.formattingSettings.category.fill, this.themeTextColor);
+        setDefaultColor(this.formattingSettings.dataLabels.labelsValuesGroup.insideFill, TornadoChart.DefaultInsideLabelColor);
+        setDefaultColor(this.formattingSettings.dataLabels.labelsValuesGroup.outsideFill, this.themeLabelColor);
     }
 
     private columnPadding: number = 5;
@@ -592,6 +619,7 @@ export class TornadoChart implements IVisual {
         if(dataView){
             this.formattingSettings = this.formattingSettingsService.populateFormattingSettingsModel(TornadoChartSettingsModel, dataView);
             this.formattingSettings.setLocalizedOptions(this.localizationManager);
+            this.applyFormattingColorDefaults();
         }
 
         this.dataView = TornadoChart.converter(dataView, this.hostService, this.colors, this.localizationManager, this.formattingSettings);
@@ -1033,7 +1061,7 @@ export class TornadoChart implements IVisual {
         const precision: number = TornadoChart.getPrecision(this.formattingSettings.dataLabels);
 
         let dx: number,
-            color: string = this.formattingSettings.dataLabels.labelsValuesGroup.insideFill.value.value || this.themeBackgroundColor;
+            color: string = this.formattingSettings.dataLabels.labelsValuesGroup.insideFill.value.value || TornadoChart.DefaultInsideLabelColor;
 
         const maxOutsideLabelWidth: number = isColumnPositionLeft
             ? dxColumn - this.leftLabelMargin
@@ -1066,16 +1094,16 @@ export class TornadoChart implements IVisual {
         const valueAfterValueFormatter: string = textMeasurementService.getTailoredTextOrDefault(textProperties, maxLabelWidth);
         const textDataAfterValueFormatter: TextData = TornadoChart.getTextData(valueAfterValueFormatter, this.formattingSettings.dataLabels.labelsValuesGroup.font, true, false);
         const negativeFill = this.formattingSettings.dataLabels.labelsValuesGroup.negativeFill?.value?.value;
-        const negativeBarsTransparency = this.formattingSettings.negativeBars?.transparency?.value ?? 0;
-        const transparentNegativeFill = value < 0 && negativeBarsTransparency === 100
-            ? this.formattingSettings.dataLabels.labelsValuesGroup.outsideFill.value.value || this.themeForegroundColor
-            : null;
-        const negativeLabelFill = negativeFill || transparentNegativeFill;
+        const useTransparentNegativeFill = value < 0
+            && this.formattingSettings.negativeBars?.show?.value
+            && this.formattingSettings.negativeBars.transparency?.value === 100;
 
         if (columnWidth > textDataAfterValueFormatter.width + TornadoChart.LabelPadding) {
             dx = dxColumn + columnWidth / 2 - textDataAfterValueFormatter.width / 2;
-            if (value < 0 && negativeLabelFill) {
-                color = negativeLabelFill;
+            if (value < 0 && negativeFill) {
+                color = negativeFill;
+            } else if (useTransparentNegativeFill) {
+                color = this.themeLabelColor;
             }
         } else {
             if (isColumnPositionLeft) {
@@ -1083,10 +1111,10 @@ export class TornadoChart implements IVisual {
             } else {
                 dx = dxColumn + columnWidth + this.leftLabelMargin;
             }
-            if (value < 0 && negativeLabelFill) {
-                color = negativeLabelFill;
+            if (value < 0 && negativeFill) {
+                color = negativeFill;
             } else {
-                color = this.formattingSettings.dataLabels.labelsValuesGroup.outsideFill.value.value || this.themeForegroundColor;
+                color = this.formattingSettings.dataLabels.labelsValuesGroup.outsideFill.value.value || this.themeLabelColor;
             }
         }
 
@@ -1246,7 +1274,7 @@ export class TornadoChart implements IVisual {
 
     private renderCategories(isFormatMode: boolean): void {
         const formattingSettings: TornadoChartSettingsModel = this.formattingSettings,
-            color: string = formattingSettings.category.fill.value.value || this.themeForegroundColor,
+            color: string = formattingSettings.category.fill.value.value || this.themeTextColor,
             fontSizeInPx: string = PixelConverter.fromPoint( formattingSettings.category.font.fontSize.value),
             position: string = this.formattingSettings.category.positionDropdown.value.value.toString(),
 
@@ -1338,7 +1366,7 @@ export class TornadoChart implements IVisual {
                 return;
             }
 
-            const legendLabelsColor: string = legendSettings.text.labelColor.value.value || this.themeForegroundColor;
+            const legendLabelsColor: string = legendSettings.text.labelColor.value.value || this.themeTextColor;
             const legendData: LegendData = {
                 title: legendSettings.title.showTitle.value ? (legendSettings.title.titleText.value || legendSettings.title.defaultTitleText) : "",
                 dataPoints: legend.dataPoints,
