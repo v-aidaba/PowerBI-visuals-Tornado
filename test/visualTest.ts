@@ -607,7 +607,7 @@ describe("TornadoChart", () => {
 
                     getRenderedPoints().forEach((point: TornadoChartPoint) => {
                         const { labelWidth, isLeftSeries } = getLabelMetrics(point);
-                        const expectedPadding = labelPadding + Math.min(cornerRadius, point.width! / 2);
+                        const expectedPadding = labelPadding + Math.min(cornerRadius, point.width! / 2, point.height! / 2);
                         const actualPadding = isLeftSeries
                             ? point.label!.dx - point.dx!
                             : point.dx! + point.width! - (point.label!.dx + labelWidth);
