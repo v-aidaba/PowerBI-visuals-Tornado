@@ -598,8 +598,8 @@ describe("TornadoChart", () => {
                     });
                 });
 
-                it("adds clearance between inside-end labels and rounded bar ends", () => {
-                    const cornerRadius = 8;
+                it("uses rounded-end geometry for inside-end label clearance", () => {
+                    const cornerRadius = 100;
                     (dataView.metadata.objects!).labels.position = "insideEnd";
                     dataView.metadata.objects!.barAppearance = { cornerRadius };
 
@@ -607,12 +607,16 @@ describe("TornadoChart", () => {
 
                     getRenderedPoints().forEach((point: TornadoChartPoint) => {
                         const { labelWidth, isLeftSeries } = getLabelMetrics(point);
-                        const expectedPadding = labelPadding + Math.min(cornerRadius, point.width! / 2, point.height! / 2);
+                        const radius = Math.min(cornerRadius, point.width! / 2, point.height! / 2);
+                        const chartDataView = (visualBuilder.instance as unknown as { dataView: TornadoChartDataView }).dataView;
+                        const halfLabelHeight = Math.min(chartDataView.labelHeight / 2, radius);
+                        const expectedPadding = labelPadding + radius
+                            - Math.sqrt(Math.max(0, radius ** 2 - halfLabelHeight ** 2));
                         const actualPadding = isLeftSeries
                             ? point.label!.dx - point.dx!
                             : point.dx! + point.width! - (point.label!.dx + labelWidth);
 
-                        expect(actualPadding).toBeGreaterThanOrEqual(expectedPadding - 1.5);
+                        expect(actualPadding).toBeCloseTo(expectedPadding, 1);
                     });
                 });
 

@@ -134,7 +134,7 @@ export class TornadoChart implements IVisual {
     private static MaxPrecision: number = 17; // max number of decimals in float
     private static LabelPadding: number = 2.5;
     private static PositionedLabelPadding: number = 8;
-    private static LabelMeasurementBuffer: number = 4;
+    private static LabelMeasurementBuffer: number = 1;
     private static MinimumRenderedBarWidth: number = 1;
     private static CategoryMinHeight: number = 25;
     private static HighlightedShapeFactor: number = 1;
@@ -1087,9 +1087,7 @@ export class TornadoChart implements IVisual {
         const insideColor: string = this.formattingSettings.dataLabels.labelsValuesGroup.insideFill.value.value || this.themeBackgroundColor;
         const outsideColor: string = this.formattingSettings.dataLabels.labelsValuesGroup.outsideFill.value.value || this.themeForegroundColor;
         const insideBasePadding = TornadoChart.PositionedLabelPadding;
-        const roundedEndPadding = this.getRoundedEndLabelPadding(value, columnWidth);
-        const insideEndPadding = insideBasePadding + roundedEndPadding
-            + (roundedEndPadding > 0 ? TornadoChart.LabelMeasurementBuffer : 0);
+        const insideEndPadding = insideBasePadding + this.getRoundedEndLabelPadding(value, columnWidth);
         const outsidePadding = position === LabelPosition.OutsideEnd
             ? TornadoChart.PositionedLabelPadding
             : this.leftLabelMargin;
@@ -1157,11 +1155,13 @@ export class TornadoChart implements IVisual {
         const configuredCornerRadius = value < 0
             ? this.formattingSettings.negativeBars?.cornerRadius?.value
             : this.formattingSettings.barAppearance?.cornerRadius?.value;
-
-        return Math.max(0, Math.min(
+        const radius = Math.max(0, Math.min(
             configuredCornerRadius ?? 0,
             columnWidth / 2,
             this.heightColumn / 2));
+        const halfLabelHeight = Math.min(this.dataView.labelHeight / 2, radius);
+
+        return radius - Math.sqrt(Math.max(0, radius ** 2 - halfLabelHeight ** 2));
     }
 
     private getLabelPlacement(
@@ -1352,12 +1352,6 @@ export class TornadoChart implements IVisual {
             .text((p: TornadoChartPoint) => isLabelHidden(p) ? "" : p.label!.source);
 
         labelSelectionMerged
-            .attr("transform", (p: TornadoChartPoint, index: number) => {
-                const dy: number = (this.heightColumn + this.columnPadding) * (index % categoriesLength);
-                return translate(p.label.dx, dy + labelYOffset);
-            });
-
-        labelSelectionMerged
             .select(TornadoChart.LabelText.selectorName)
             .attr("fill", (p: TornadoChartPoint) => this.colorHelper.isHighContrast ? this.colorHelper.getHighContrastColor("foreground", p.label!.color) : p.label!.color)
             .attr("font-size", fontSizeInPx)
@@ -1367,6 +1361,31 @@ export class TornadoChart implements IVisual {
             .attr("text-decoration", labelFontIsUnderlined? "underline" : "normal")
             .text((p: TornadoChartPoint) => isLabelHidden(p) ? "" : p.label!.value)
             .attr("role", "presentation");
+
+        if (this.position === LabelPosition.InsideEnd) {
+            labelSelectionMerged.each((p: TornadoChartPoint, index: number, nodes: ArrayLike<any>) => {
+                const labelText = (nodes[index] as SVGGElement)
+                    .querySelector(TornadoChart.LabelText.selectorName) as SVGTextElement;
+                const labelWidth = labelText.getComputedTextLength();
+                const columnDx = p.dx!;
+                const columnWidth = p.width!;
+                const insideEndPadding = TornadoChart.PositionedLabelPadding
+                    + this.getRoundedEndLabelPadding(p.value, columnWidth);
+                const isColumnPositionLeft = p.uniqId < categoriesLength;
+                const intendedDx = isColumnPositionLeft
+                    ? columnDx + insideEndPadding
+                    : columnDx + columnWidth - labelWidth - insideEndPadding;
+                const maxDx = columnDx + Math.max(0, columnWidth - labelWidth);
+
+                p.label!.dx = Math.max(columnDx, Math.min(intendedDx, maxDx));
+            });
+        }
+
+        labelSelectionMerged
+            .attr("transform", (p: TornadoChartPoint, index: number) => {
+                const dy: number = (this.heightColumn + this.columnPadding) * (index % categoriesLength);
+                return translate(p.label.dx, dy + labelYOffset);
+            });
 
         labelSelection
             .exit()
