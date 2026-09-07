@@ -134,7 +134,7 @@ export class TornadoChart implements IVisual {
     private static MaxPrecision: number = 17; // max number of decimals in float
     private static LabelPadding: number = 2.5;
     private static PositionedLabelPadding: number = 8;
-    private static LabelMeasurementBuffer: number = 1;
+    private static LabelMeasurementBuffer: number = 4;
     private static MinimumRenderedBarWidth: number = 1;
     private static CategoryMinHeight: number = 25;
     private static HighlightedShapeFactor: number = 1;
@@ -1087,7 +1087,9 @@ export class TornadoChart implements IVisual {
         const insideColor: string = this.formattingSettings.dataLabels.labelsValuesGroup.insideFill.value.value || this.themeBackgroundColor;
         const outsideColor: string = this.formattingSettings.dataLabels.labelsValuesGroup.outsideFill.value.value || this.themeForegroundColor;
         const insideBasePadding = TornadoChart.PositionedLabelPadding;
-        const insideEndPadding = insideBasePadding + this.getRoundedEndLabelPadding(value, columnWidth);
+        const roundedEndPadding = this.getRoundedEndLabelPadding(value, columnWidth);
+        const insideEndPadding = insideBasePadding + roundedEndPadding
+            + (roundedEndPadding > 0 ? TornadoChart.LabelMeasurementBuffer : 0);
         const outsidePadding = position === LabelPosition.OutsideEnd
             ? TornadoChart.PositionedLabelPadding
             : this.leftLabelMargin;
