@@ -238,6 +238,17 @@
                         ]
                     }
                 },
+                "position": {
+                    "type": {
+                        "enumeration": [
+                            {"value": "auto"},
+                            {"value": "outsideEnd"},
+                            {"value": "insideEnd"},
+                            {"value": "insideCenter"},
+                            {"value": "insideBase"}
+                        ]
+                    }
+                },
                 "labelPrecision": {
                     "placeHolderText": "Auto",
                     "type": {

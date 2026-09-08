@@ -425,6 +425,218 @@ describe("TornadoChart", () => {
                     expect(texts.some((text: string) => text.includes("(") && text.includes("%)"))).toBeTrue();
                 });
             });
+
+            describe("position", () => {
+                const labelPadding = 8;
+                const getRenderedPoints = (): TornadoChartPoint[] =>
+                    Array.from(visualBuilder.labels)
+                        .map((element: HTMLElement) => <TornadoChartPoint>(<any>element).__data__)
+                        .filter((point: TornadoChartPoint) => !!point.label?.value);
+                const getRenderedColumnWidths = (): number[] =>
+                    Array.from(visualBuilder.columns)
+                        .map((element: SVGPathElement) => (<TornadoChartPoint>(<any>element).__data__).width!);
+                const getCalculatedColumnWidths = (): number[] =>
+                    (visualBuilder.instance as unknown as { dataView: TornadoChartDataView })
+                        .dataView.dataPoints.map(point => point.width!);
+                const getLabelMetrics = (point: TornadoChartPoint) => {
+                    const labelElement = Array.from(visualBuilder.labels)
+                        .find((element: HTMLElement) => (<TornadoChartPoint>(<any>element).__data__) === point)!;
+                    const labelText = labelElement.querySelector("text.label-text") as SVGTextElement;
+
+                    return {
+                        labelWidth: labelText.getComputedTextLength(),
+                        isLeftSeries: point.uniqId < dataView.categorical!.categories![0].values.length
+                    };
+                };
+
+                beforeEach(() => {
+                    dataViewBuilder.valuesValue1 = [50, 50, 50, 50, 50, 1000];
+                    dataViewBuilder.valuesValue2 = [50, 50, 50, 50, 50, 1000];
+                    dataView = dataViewBuilder.getDataView();
+                    dataView.metadata.objects = { labels: { show: true } };
+                });
+
+                it("uses Auto when the property is absent", () => {
+                    visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                    expect(visualBuilder.instance.formattingSettings.dataLabels.labelsOptionsGroup.position.value.value)
+                        .toBe("auto");
+                });
+
+                it("does not reserve outside-label space when labels are hidden", () => {
+                    (dataView.metadata.objects!).labels.show = false;
+                    visualBuilder.updateFlushAllD3Transitions(dataView);
+                    const autoWidths = getRenderedColumnWidths();
+
+                    (dataView.metadata.objects!).labels.position = "outsideEnd";
+                    visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                    expect(getRenderedColumnWidths()).toEqual(autoWidths);
+                });
+
+                it("does not reserve outside-label space when all negative bars are hidden", () => {
+                    dataViewBuilder.valuesValue1 = [-50, -50, -50, -50, -50, -1000];
+                    dataViewBuilder.valuesValue2 = [-50, -50, -50, -50, -50, -1000];
+                    dataView = dataViewBuilder.getDataView();
+                    dataView.metadata.objects = {
+                        labels: { show: true },
+                        negativeBars: { show: false }
+                    };
+                    visualBuilder.updateFlushAllD3Transitions(dataView);
+                    const autoWidths = getCalculatedColumnWidths();
+
+                    (dataView.metadata.objects!).labels.position = "outsideEnd";
+                    visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                    expect(getCalculatedColumnWidths()).toEqual(autoWidths);
+                });
+
+                it("preserves auto inside and outside placement", () => {
+                    visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                    const points = getRenderedPoints();
+                    const isInside = (point: TornadoChartPoint): boolean =>
+                        point.label!.dx >= point.dx!
+                        && point.label!.dx <= point.dx! + point.width!;
+
+                    expect(points.some(isInside)).toBeTrue();
+                    expect(points.some((point: TornadoChartPoint) => !isInside(point))).toBeTrue();
+                });
+
+                it("places labels outside the end on both sides", () => {
+                    (dataView.metadata.objects!).labels.position = "outsideEnd";
+                    visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                    const points = getRenderedPoints();
+                    const categoriesLength = dataView.categorical!.categories![0].values.length;
+                    expect(points.length).toBe(categoriesLength * 2);
+                    points.forEach((point: TornadoChartPoint) => {
+                        const { labelWidth, isLeftSeries } = getLabelMetrics(point);
+                        if (isLeftSeries) {
+                            expect(point.label!.dx + labelWidth).toBeLessThanOrEqual(point.dx! - labelPadding + 0.01);
+                        } else {
+                            expect(point.label!.dx).toBeGreaterThanOrEqual(point.dx! + point.width! + labelPadding);
+                            expect(point.label!.dx + labelWidth).toBeLessThanOrEqual(visualBuilder.viewport.width);
+                        }
+                    });
+                });
+
+                it("keeps complete outside labels when the text fits beside the bars", () => {
+                    visualBuilder = new TornadoChartBuilder(260, 500);
+                    dataViewBuilder.valuesValue1 = [50, 50, 50, 50, 50, 1000];
+                    dataViewBuilder.valuesValue2 = [50, 50, 50, 50, 50, 1000];
+                    dataView = dataViewBuilder.getDataView();
+                    dataView.categorical!.values!.forEach((column: DataViewValueColumn) => {
+                        column.source.format = "#,0";
+                    });
+                    dataView.metadata.objects = {
+                        labels: {
+                            show: true,
+                            position: "outsideEnd",
+                            displayFormat: "percentage",
+                            labelPrecision: 2
+                        }
+                    };
+
+                    visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                    const maximumValueLabels = getRenderedPoints()
+                        .filter((point: TornadoChartPoint) => point.value === 1000);
+                    expect(maximumValueLabels.length).toBe(2);
+                    maximumValueLabels.forEach((point: TornadoChartPoint) => {
+                        expect(point.label!.value).toBe("100.00%");
+                        expect(point.width).toBeGreaterThan(0);
+                    });
+                });
+
+                [
+                    {
+                        name: "places labels inside the end on both sides",
+                        position: "insideEnd",
+                        precision: 1,
+                        expectedDx: (point: TornadoChartPoint, labelWidth: number, isLeftSeries: boolean): number => isLeftSeries
+                            ? point.dx! + labelPadding
+                            : point.dx! + point.width! - labelWidth - labelPadding
+                    },
+                    {
+                        name: "centers labels inside bars on both sides",
+                        position: "insideCenter",
+                        precision: 1,
+                        expectedDx: (point: TornadoChartPoint, labelWidth: number): number =>
+                            point.dx! + point.width! / 2 - labelWidth / 2
+                    },
+                    {
+                        name: "places labels inside the base on both sides",
+                        position: "insideBase",
+                        precision: 1,
+                        expectedDx: (point: TornadoChartPoint, labelWidth: number, isLeftSeries: boolean): number => isLeftSeries
+                            ? point.dx! + point.width! - labelWidth - labelPadding
+                            : point.dx! + labelPadding
+                    }
+                ].forEach(({ name, position, precision, expectedDx }) => {
+                    it(name, () => {
+                        (dataView.metadata.objects!).labels.position = position;
+                        visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                        const points = getRenderedPoints();
+                        expect(points.length).toBeGreaterThan(0);
+                        points.forEach((point: TornadoChartPoint) => {
+                            const { labelWidth, isLeftSeries } = getLabelMetrics(point);
+
+                            expect(point.label!.dx).toBeCloseTo(expectedDx(point, labelWidth, isLeftSeries), precision);
+                            expect(point.label!.dx).toBeGreaterThanOrEqual(point.dx!);
+                            expect(point.label!.dx + labelWidth).toBeLessThanOrEqual(point.dx! + point.width! + 0.01);
+                        });
+                    });
+                });
+
+                it("uses rounded-end geometry for inside-end label clearance", () => {
+                    const cornerRadius = 100;
+                    (dataView.metadata.objects!).labels.position = "insideEnd";
+                    dataView.metadata.objects!.barAppearance = { cornerRadius };
+
+                    visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                    getRenderedPoints().forEach((point: TornadoChartPoint) => {
+                        const { labelWidth, isLeftSeries } = getLabelMetrics(point);
+                        const radius = Math.min(cornerRadius, point.width! / 2, point.height! / 2);
+                        const chartDataView = (visualBuilder.instance as unknown as { dataView: TornadoChartDataView }).dataView;
+                        const halfLabelHeight = Math.min(chartDataView.labelHeight / 2, radius);
+                        const expectedPadding = labelPadding + radius
+                            - Math.sqrt(Math.max(0, radius ** 2 - halfLabelHeight ** 2));
+                        const actualPadding = isLeftSeries
+                            ? point.label!.dx - point.dx!
+                            : point.dx! + point.width! - (point.label!.dx + labelWidth);
+
+                        expect(actualPadding).toBeCloseTo(expectedPadding, 1);
+                    });
+                });
+
+                it("keeps the negative label color override", () => {
+                    const negativeColor = "#123456";
+                    dataViewBuilder.valuesValue1 = [-50, -1000, 50, 50, 50, 1000];
+                    dataView = dataViewBuilder.getDataView();
+                    dataView.metadata.objects = {
+                        labels: {
+                            show: true,
+                            position: "outsideEnd",
+                            negativeFill: getSolidColorStructuralObject(negativeColor)
+                        },
+                        negativeBars: {
+                            show: true
+                        }
+                    };
+
+                    visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                    const negativePoints = getRenderedPoints()
+                        .filter((point: TornadoChartPoint) => point.value < 0);
+                    expect(negativePoints.length).toBeGreaterThan(0);
+                    negativePoints.forEach((point: TornadoChartPoint) => {
+                        expect(point.label!.color).toBe(negativeColor);
+                    });
+                });
+            });
         });
 
         describe("Group", () => {
