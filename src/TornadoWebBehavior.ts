@@ -133,11 +133,16 @@ export class TornadoWebBehavior {
         });
 
         this.legendIcons.style("fill", (legendDataPoint: LegendDataPoint) => {
+            const dimmedColor =
+                this.colorHelper.getThemeColor("foregroundNeutralTertiary")
+                || legendDataPoint.color;
+
             return TornadoChartUtils.getLegendFill(
                 legendDataPoint.selected,
                 legendHasSelection,
                 legendDataPoint.color,
-                this.colorHelper.isHighContrast
+                this.colorHelper.isHighContrast,
+                dimmedColor
             );
         });
 
@@ -145,7 +150,12 @@ export class TornadoWebBehavior {
             return dataPoint.selected
         });
         this.applySelectionStyleAttribute(this.columns, "fill-opacity", dataPointHasSelection);
-        this.applySelectionStyleAttribute(this.columns, "stroke-opacity", dataPointHasSelection);
+        this.columns.style("stroke-opacity", (dataPoint: TornadoChartPoint) => {
+            return TornadoChartUtils.getStrokeOpacity(
+                dataPoint.selected,
+                dataPoint.highlight,
+                dataPointHasSelection);
+        });
         this.applyGradientsForHighlight(dataPointHasSelection, dataPointHasHighlight);
     }
 
