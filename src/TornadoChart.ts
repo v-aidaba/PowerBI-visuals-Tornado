@@ -141,6 +141,8 @@ export class TornadoChart implements IVisual {
     private static CategoryLabelMargin: number = 10;
     private static DefaultLabelSettingsDisplayUnits = 1;
     private static DefaultLabelSettingsLabelPrecision = null;
+    private static DefaultForegroundColor: string = "#000000";
+    private static DefaultBackgroundColor: string = "#FFFFFF";
     private static MaxAngle: number = 180;
     private static MinAngle: number = 0;
 
@@ -433,14 +435,16 @@ export class TornadoChart implements IVisual {
         const extendedPalette = this.colors as ISandboxExtendedColorPalette;
         return extendedPalette.foreground?.value
             || extendedPalette.foregroundDark?.value
-            || extendedPalette.foregroundNeutralDark?.value;
+            || extendedPalette.foregroundNeutralDark?.value
+            || TornadoChart.DefaultForegroundColor;
     }
 
     private get themeBackgroundColor(): string {
         const extendedPalette = this.colors as ISandboxExtendedColorPalette;
         return extendedPalette.background?.value
             || extendedPalette.backgroundLight?.value
-            || extendedPalette.backgroundNeutral?.value;
+            || extendedPalette.backgroundNeutral?.value
+            || TornadoChart.DefaultBackgroundColor;
     }
 
     private get themeTextColor(): string {
