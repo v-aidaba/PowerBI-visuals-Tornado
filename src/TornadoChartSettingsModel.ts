@@ -44,7 +44,7 @@ class DataColorCardSettings extends Card {
         name: "fill",
         displayName: "Fill",
         displayNameKey: "Visual_Fill",
-        value: { value: "#000000" }
+        value: { value: "" }
     });
 
     name: string = TornadoObjectNames.DataPoint;
@@ -304,7 +304,7 @@ class ChartAreaCardSettings extends Card {
         name: "backgroundColor",
         displayName: "Background color",
         displayNameKey: "Visual_BackgroundColor",
-        value: { value: "#B3B3B3" }
+        value: { value: "" }
     });
 
     name: string = "chartArea";
@@ -395,14 +395,14 @@ class LabelsValuesGroup extends Card {
         name: "insideFill",
         displayName: "Inside fill",
         displayNameKey: "Visual_DataLabels_InsideFill",
-        value: { value: "#FFFFFF" }
+        value: { value: "" }
     });
 
     outsideFill = new formattingSettings.ColorPicker({
         name: "outsideFill",
         displayName: "Outside fill",
         displayNameKey: "Visual_DataLabels_OutsideFill",
-        value: { value: "#666666" }
+        value: { value: "" }
     });
 
     negativeFill = new formattingSettings.ColorPicker({
@@ -520,7 +520,7 @@ class LegendOptionsGroup extends Card {
 }
 
 class LegendTextGroup extends Card {
-    public defaultLabelColor: string = "#000000";
+    public defaultLabelColor: string = "";
     public defaultFontSize: number = 8;
 
     public labelColor = new formattingSettings.ColorPicker({
@@ -653,7 +653,7 @@ export class CategoryCardSettings extends Card {
         name: "fill",
         displayName: "Color",
         displayNameKey: "Visual_Color",
-        value: { value: "#666666" }
+        value: { value: "" }
     });
 
     positionDropdown = new formattingSettings.ItemDropdown({
