@@ -35,6 +35,13 @@ export class TornadoChartUtils {
         return TornadoChartUtils.DefaultOpacity;
     }
 
+    static getStrokeOpacity(selected: boolean, highlight: boolean, hasSelection: boolean): number {
+        if (!highlight && hasSelection && !selected) {
+            return TornadoChartUtils.DimmedOpacity;
+        }
+        return TornadoChartUtils.DefaultOpacity;
+    }
+
     static getLegendFillOpacity(
         selected: boolean,
         hasSelection: boolean,

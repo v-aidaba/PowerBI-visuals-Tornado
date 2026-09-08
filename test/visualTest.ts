@@ -1425,6 +1425,32 @@ describe("TornadoChart", () => {
     });
 
     describe("Selection tests", () => {
+        it("dims unselected borders when a transparent negative bar is selected", () => {
+            dataViewBuilder.valuesValue1 = [-120000, -45000, 0, 45000, 120000, 60000];
+            dataViewBuilder.valuesValue2 = [0, 0, 0, 0, 0, 0];
+            dataView = dataViewBuilder.getDataView();
+            dataView.metadata.objects = {
+                negativeBars: {
+                    show: true,
+                    transparency: 100,
+                    borderWidth: 2
+                }
+            };
+
+            visualBuilder.updateFlushAllD3Transitions(dataView);
+
+            const selectedColumn = Array.from(visualBuilder.columns)
+                .find((column: SVGPathElement) => (<TornadoChartPoint>(<any>column).__data__).value === -120000)!;
+            const unselectedColumn = Array.from(visualBuilder.columns)
+                .find((column: SVGPathElement) => column !== selectedColumn)!;
+
+            d3Click(selectedColumn, 0, 0, ClickEventType.Default);
+
+            expect(getComputedStyle(selectedColumn).getPropertyValue("fill-opacity")).toBe("0");
+            expect(getComputedStyle(selectedColumn).getPropertyValue("stroke-opacity")).toBe("1");
+            expect(getComputedStyle(unselectedColumn).getPropertyValue("stroke-opacity")).toBe("0.4");
+        });
+
         it("column can be selected", (done) => {
             visualBuilder.updateRenderTimeout(dataView, () => {
                 const firstColumn: SVGPathElement = visualBuilder.columns[0];

@@ -150,7 +150,12 @@ export class TornadoWebBehavior {
             return dataPoint.selected
         });
         this.applySelectionStyleAttribute(this.columns, "fill-opacity", dataPointHasSelection);
-        this.applySelectionStyleAttribute(this.columns, "stroke-opacity", dataPointHasSelection);
+        this.columns.style("stroke-opacity", (dataPoint: TornadoChartPoint) => {
+            return TornadoChartUtils.getStrokeOpacity(
+                dataPoint.selected,
+                dataPoint.highlight,
+                dataPointHasSelection);
+        });
         this.applyGradientsForHighlight(dataPointHasSelection, dataPointHasHighlight);
     }
 
