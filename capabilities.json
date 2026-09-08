@@ -163,6 +163,16 @@
                         "bool": true
                     }
                 },
+                "autoRange": {
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "start": {
+                    "type": {
+                        "numeric": true
+                    }
+                },
                 "end": {
                     "type": {
                         "numeric": true

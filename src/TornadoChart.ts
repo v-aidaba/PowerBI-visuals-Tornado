@@ -229,6 +229,13 @@ export class TornadoChart implements IVisual {
             const parsedSeries: TornadoChartSeries = TornadoChart.parseSeries(dataView, values, hostService, seriesIndex, hasDynamicSeries, columnGroup, colors);
             const currentSeries: DataViewValueColumn = values[seriesIndex];
             const measureName: string = currentSeries.source.queryName;
+            const automaticSeriesMin = seriesMinMax[seriesIndex]?.min ?? 0;
+            const automaticSeriesMax = seriesMinMax[seriesIndex]?.max ?? 0;
+            const seriesRange = TornadoChart.resolveSeriesRange(
+                parsedSeries,
+                automaticSeriesMin,
+                automaticSeriesMax,
+                minValue);
 
             series.push(parsedSeries);
 
@@ -245,12 +252,9 @@ export class TornadoChart implements IVisual {
                         seriesIndex,
                         highlightedValue || null);
 
-                // Limit maximum value using categoryAxisEnd if set
-                const currentMaxValue = parsedSeries.categoryAxisEnd ? parsedSeries.categoryAxisEnd : maxValue;
-                
                 // Per-series min/max for normalization
-                const seriesMin = seriesMinMax[seriesIndex]?.min ?? 0;
-                const seriesMax = seriesMinMax[seriesIndex]?.max ?? currentMaxValue;
+                const seriesMin = automaticSeriesMin;
+                const seriesMax = automaticSeriesMax;
                 
                 const formatString: string = dataView.categorical.values[seriesIndex].source.format;
                 
@@ -263,8 +267,8 @@ export class TornadoChart implements IVisual {
                 const dataPointCommon = {
                     uniqId: uniqId,
                     value,
-                    minValue: minValue,
-                    maxValue: currentMaxValue,
+                    minValue: seriesRange.min,
+                    maxValue: seriesRange.max,
                     seriesMin: seriesMin,
                     seriesMax: seriesMax,
                     formatString,
@@ -306,6 +310,33 @@ export class TornadoChart implements IVisual {
             legendObjectProperties: dataViewObjects.getObject(dataView.metadata.objects, "legend", {}),
             categoriesObjectProperties: dataViewObjects.getObject(dataView.metadata.objects, "categories", {}),
         };
+    }
+
+    private static resolveSeriesRange(
+        series: TornadoChartSeries,
+        automaticMin: number,
+        automaticMax: number,
+        legacyMin: number): { min: number; max: number } {
+
+        if (series.categoryAxisAutoRange === true) {
+            return { min: automaticMin, max: automaticMax };
+        }
+
+        const hasStart = Number.isFinite(series.categoryAxisStart);
+        const hasEnd = Number.isFinite(series.categoryAxisEnd);
+
+        if (series.categoryAxisAutoRange === null && !hasStart) {
+            return hasEnd && series.categoryAxisEnd !== 0
+                ? { min: legacyMin, max: series.categoryAxisEnd! }
+                : { min: automaticMin, max: automaticMax };
+        }
+
+        const minValue = hasStart ? series.categoryAxisStart! : automaticMin;
+        const maxValue = hasEnd ? series.categoryAxisEnd! : automaticMax;
+
+        return minValue < maxValue
+            ? { min: minValue, max: maxValue }
+            : { min: automaticMin, max: automaticMax };
     }
 
     public static parseSeries(
@@ -352,12 +383,20 @@ export class TornadoChart implements IVisual {
             colors
         );
 
+        let categoryAxisAutoRange: boolean = null;
+        let categoryAxisStart: number = null;
         let categoryAxisEnd: number = null;
         const categoryAxisObject = mergedObjects.categoryAxis;
 
         if (categoryAxisObject && !Array.isArray(categoryAxisObject)) {
             const axis = categoryAxisObject as DataViewObject;
-            if (typeof axis.end === "number") {
+            if (typeof axis.autoRange === "boolean") {
+                categoryAxisAutoRange = axis.autoRange;
+            }
+            if (typeof axis.start === "number" && Number.isFinite(axis.start)) {
+                categoryAxisStart = axis.start;
+            }
+            if (typeof axis.end === "number" && Number.isFinite(axis.end)) {
                 categoryAxisEnd = axis.end;
             }
         }
@@ -366,6 +405,8 @@ export class TornadoChart implements IVisual {
             fill: fillColor,
             name: displayName,
             selectionId: selectionId,
+            categoryAxisAutoRange: categoryAxisAutoRange,
+            categoryAxisStart: categoryAxisStart,
             categoryAxisEnd: categoryAxisEnd
         } as TornadoChartSeries;
     }

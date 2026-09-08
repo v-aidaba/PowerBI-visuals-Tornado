@@ -14,6 +14,18 @@ import IEnumMember = powerbi.IEnumMember;
 import ILocalizationManager = powerbi.extensibility.ILocalizationManager;
 import { LegendData } from "powerbi-visuals-utils-chartutils/lib/legend/legendInterfaces";
 
+class NullableNumUpDown extends formattingSettings.NumUpDown {
+    public placeholderText: string = "Auto";
+    public placeholderTextKey: string = "Visual_Auto";
+
+    public getFormattingComponent(objectName: string, localizationManager?: ILocalizationManager): any {
+        return {
+            ...super.getFormattingComponent(objectName),
+            placeholderText: localizationManager?.getDisplayName(this.placeholderTextKey) || this.placeholderText
+        };
+    }
+}
+
 export const enum TornadoObjectNames {
     Legend = "legend",
     LegendTitle = "legendTitle",
@@ -51,17 +63,31 @@ class CategoryAxisCardSettings extends Card {
         value: false
     });
 
-    end = new formattingSettings.NumUpDown({
+    autoRange = new formattingSettings.ToggleSwitch({
+        name: "autoRange",
+        displayName: "Auto range",
+        displayNameKey: "Visual_AutoRange",
+        value: true
+    });
+
+    start = new NullableNumUpDown({
+        name: "start",
+        displayName: "Start",
+        displayNameKey: "Visual_XAxisStart",
+        value: <number><unknown>null
+    });
+
+    end = new NullableNumUpDown({
         name: "end",
         displayName: "End",
         displayNameKey: "Visual_XAxisEnd",
-        value: 0
+        value: <number><unknown>null
     });
 
     name: string = "categoryAxis";
     displayName: string = "X-Axis";
     displayNameKey: string = "Visual_XAxis";
-    slices = [this.normalize, this.end];
+    slices = [this.normalize, this.autoRange, this.start, this.end];
 }
 
 class NegativeBarsCardSettings extends Card {
@@ -680,14 +706,37 @@ export class TornadoChartSettingsModel extends Model {
         this.categoryAxis.slices = [this.categoryAxis.normalize];
         if (!isNormalized) {
             for (const dataPoint of dataPoints) {
+                const selector = ColorHelper.normalizeSelector(
+                    dataPoint.selectionId.getSelector(),
+                    false);
+                const autoRange = dataPoint.categoryAxisAutoRange
+                    ?? (dataPoint.categoryAxisStart === null
+                        && (dataPoint.categoryAxisEnd === null || dataPoint.categoryAxisEnd === 0));
+
                 this.categoryAxis.slices.push(
-                    new formattingSettings.NumUpDown({
-                        name: "end",
+                    new formattingSettings.ToggleSwitch({
+                        name: "autoRange",
                         displayName: dataPoint.name,
-                        value: dataPoint.categoryAxisEnd ? dataPoint.categoryAxisEnd : 0,
-                        selector: ColorHelper.normalizeSelector(
-                            dataPoint.selectionId.getSelector(),
-                            false)
+                        description: "Auto range",
+                        descriptionKey: "Visual_AutoRange",
+                        value: autoRange,
+                        selector
+                    }),
+                    new NullableNumUpDown({
+                        name: "start",
+                        displayName: "Start",
+                        displayNameKey: "Visual_XAxisStart",
+                        value: <number><unknown>dataPoint.categoryAxisStart,
+                        selector,
+                        disabled: autoRange
+                    }),
+                    new NullableNumUpDown({
+                        name: "end",
+                        displayName: "End",
+                        displayNameKey: "Visual_XAxisEnd",
+                        value: <number><unknown>(dataPoint.categoryAxisEnd ?? null),
+                        selector,
+                        disabled: autoRange
                     })
                 );
             }

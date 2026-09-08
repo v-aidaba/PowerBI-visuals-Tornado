@@ -46,7 +46,6 @@ describe("TornadoChart", () => {
         dataViewBuilder: TornadoData,
         dataView: DataView,
         MaxSeries: number = 2;
-    const defaultAwaitTime = 2000;
 
     beforeEach(() => {
         visualBuilder = new TornadoChartBuilder(1000, 500);
@@ -310,23 +309,16 @@ describe("TornadoChart", () => {
                 };
             });
 
-            //Await usage
             it("show", () => {
-                visualBuilder.updateflushAllD3TransitionsRenderTimeout(dataView, async () => {
-                    await delay(defaultAwaitTime);
-                    visualBuilder.labelText.forEach((element) => {
-                        expect(document.body.contains(element)).toBeTruthy();
-                    });
-                    (dataView.metadata.objects!).labels.show = false;
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+                expect(visualBuilder.labels.length).toBeGreaterThan(0);
+                visualBuilder.labelText.forEach((element) => {
+                    expect(document.body.contains(element)).toBeTruthy();
                 });
 
-                visualBuilder.updateflushAllD3TransitionsRenderTimeout(dataView, async () => {
-                    visualBuilder.update(dataView);
-                    await delay(defaultAwaitTime);
-                    visualBuilder.labelText.forEach((element) => {
-                        expect(document.body.contains(element)).toBeFalsy();
-                    });
-                });
+                (dataView.metadata.objects!).labels.show = false;
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+                expect(visualBuilder.labels.length).toBe(0);
             });
 
             it("inside fill", () => {
@@ -444,22 +436,16 @@ describe("TornadoChart", () => {
                 };
             });
 
-            //Await usage
-            it("show", async () => {
-                visualBuilder.updateRenderTimeout(dataView, async () => {
-                    await delay(defaultAwaitTime);
-                    visualBuilder.categoryText.forEach((element) => {
-                        expect(document.body.contains(element)).toBeTruthy();
-                    });
-                    (dataView.metadata.objects!).categories.show = false;
+            it("show", () => {
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+                expect(visualBuilder.categoryText.length).toBeGreaterThan(0);
+                visualBuilder.categoryText.forEach((element) => {
+                    expect(document.body.contains(element)).toBeTruthy();
                 });
 
-                visualBuilder.updateRenderTimeout(dataView, async () => {
-                    await delay(defaultAwaitTime);
-                    visualBuilder.categoryText.forEach((element) => {
-                        expect(document.body.contains(element)).toBeFalsy();
-                    });
-                });
+                (dataView.metadata.objects!).categories.show = false;
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+                expect(visualBuilder.categories.length).toBe(0);
             });
 
             it("color", () => {
@@ -825,25 +811,54 @@ describe("TornadoChart", () => {
         });
 
         describe("Category axis", () => {
+            const setSeriesAxis = (seriesIndex: number, axis: { autoRange?: boolean; start?: number | null; end?: number | null }): void => {
+                const source = dataView.categorical!.values![seriesIndex].source;
+                source.objects = {
+                    ...source.objects,
+                    categoryAxis: axis
+                };
+            };
+
+            const getRenderedPoints = (): TornadoChartPoint[] => Array.from(visualBuilder.columns)
+                .map((element: SVGPathElement) => <TornadoChartPoint>(<any>element).__data__);
+
             beforeEach(() => {
                 dataView.metadata.objects = {
                     categoryAxis: {}
                 };
             });
 
-            it("normalize", () => {
-                const getPaths = (): string[] => Array.from(visualBuilder.columns)
-                    .map((element: Element) => element.getAttribute("d") || "");
+            it("normalize temporarily ignores manual ranges", () => {
+                dataViewBuilder.valuesValue1 = [100, 100, 100, 100, 100, 100];
+                dataViewBuilder.valuesValue2 = [400, 400, 400, 400, 400, 400];
+                dataView = dataViewBuilder.getDataView();
+                dataView.metadata.objects = { categoryAxis: {} };
+                setSeriesAxis(0, { autoRange: false, start: 0, end: 200 });
+                setSeriesAxis(1, { autoRange: false, start: 0, end: 800 });
 
                 visualBuilder.updateFlushAllD3Transitions(dataView);
-                const before: string[] = getPaths();
+                const manualPoints = getRenderedPoints();
+                const seriesLength = dataViewBuilder.valuesCategory.length;
+                const manualLeftWidth = manualPoints[0].width!;
+                const manualRightWidth = manualPoints[seriesLength].width!;
 
                 (dataView.metadata.objects!).categoryAxis.normalize = true;
                 visualBuilder.updateFlushAllD3Transitions(dataView);
-                const after: string[] = getPaths();
+                const normalizedPoints = getRenderedPoints();
+                const normalizedLeftWidth = normalizedPoints[0].width!;
+                const normalizedRightWidth = normalizedPoints[seriesLength].width!;
 
-                // Normalizing changes how column widths are scaled per series
-                expect(after).not.toEqual(before);
+                expect(normalizedLeftWidth).toBeGreaterThan(manualLeftWidth);
+                expect(normalizedRightWidth).toBeGreaterThan(manualRightWidth);
+                expect(normalizedLeftWidth).toBeCloseTo(normalizedRightWidth, 5);
+                expect((<any>visualBuilder.instance.formattingSettings.categoryAxis).slices.length).toBe(1);
+
+                (dataView.metadata.objects!).categoryAxis.normalize = false;
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+                const restoredPoints = getRenderedPoints();
+
+                expect(restoredPoints[0].width).toBeCloseTo(manualLeftWidth, 5);
+                expect(restoredPoints[seriesLength].width).toBeCloseTo(manualRightWidth, 5);
             });
 
             it("end", () => {
@@ -859,6 +874,136 @@ describe("TornadoChart", () => {
 
                 // Capping the axis end value rescales the rendered column widths
                 expect(after).not.toEqual(before);
+            });
+
+            it("calculates automatic ranges independently for each series", () => {
+                dataViewBuilder.valuesValue1 = [10, 20, 30, 40, 50, 60];
+                dataViewBuilder.valuesValue2 = [100, 200, 300, 400, 500, 600];
+                dataView = dataViewBuilder.getDataView();
+
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const points = getRenderedPoints();
+                const seriesLength = dataViewBuilder.valuesCategory.length;
+                const leftMaxWidth = Math.max(...points.slice(0, seriesLength).map(point => point.width!));
+                const rightMaxWidth = Math.max(...points.slice(seriesLength).map(point => point.width!));
+
+                expect(leftMaxWidth).toBeCloseTo(rightMaxWidth, 5);
+            });
+
+            it("applies a manual range only to the selected series", () => {
+                dataViewBuilder.valuesValue1 = [100, 100, 100, 100, 100, 100];
+                dataViewBuilder.valuesValue2 = [100, 100, 100, 100, 100, 100];
+                dataView = dataViewBuilder.getDataView();
+                setSeriesAxis(0, { autoRange: false, start: 0, end: 200 });
+                setSeriesAxis(1, { autoRange: true });
+
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const points = getRenderedPoints();
+                const seriesLength = dataViewBuilder.valuesCategory.length;
+                const leftWidth = points[0].width!;
+                const rightWidth = points[seriesLength].width!;
+
+                expect(leftWidth).toBeCloseTo(rightWidth / 2, 5);
+                expect(points[0].minValue).toBe(0);
+                expect(points[0].maxValue).toBe(200);
+                expect(points[seriesLength].maxValue).toBe(100);
+            });
+
+            it("uses an automatic bound when a manual bound is unset", () => {
+                dataViewBuilder.valuesValue1 = [100, 200, 100, 200, 100, 200];
+                dataView = dataViewBuilder.getDataView();
+                setSeriesAxis(0, { autoRange: false, start: null, end: 300 });
+
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const firstPoint = getRenderedPoints()[0];
+                expect(firstPoint.minValue).toBe(0);
+                expect(firstPoint.maxValue).toBe(300);
+            });
+
+            it("applies a manual negative start to the selected series", () => {
+                dataViewBuilder.valuesValue1 = [-100, 100, -100, 100, -100, 100];
+                dataView = dataViewBuilder.getDataView();
+                dataView.metadata.objects = {
+                    negativeBars: { show: true },
+                    categoryAxis: {}
+                };
+                setSeriesAxis(0, { autoRange: false, start: -200, end: 100 });
+
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const firstSeries = getRenderedPoints().slice(0, dataViewBuilder.valuesCategory.length);
+                expect(firstSeries[0].minValue).toBe(-200);
+                expect(firstSeries[0].maxValue).toBe(100);
+                expect(firstSeries[0].width).toBeCloseTo(firstSeries[1].width!, 5);
+            });
+
+            it("preserves zero as a manual end", () => {
+                dataViewBuilder.valuesValue1 = [-100, -50, -100, -50, -100, -50];
+                dataView = dataViewBuilder.getDataView();
+                dataView.metadata.objects = {
+                    negativeBars: { show: true },
+                    categoryAxis: {}
+                };
+                setSeriesAxis(0, { autoRange: false, start: -200, end: 0 });
+
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const firstPoint = getRenderedPoints()[0];
+                const firstEnd = (<any>visualBuilder.instance.formattingSettings.categoryAxis).slices[3];
+                expect(firstPoint.minValue).toBe(-200);
+                expect(firstPoint.maxValue).toBe(0);
+                expect(firstEnd.value).toBe(0);
+                expect(firstEnd.disabled).toBeFalse();
+            });
+
+            it("preserves legacy selector-scoped end values when autoRange is absent", () => {
+                dataViewBuilder.valuesValue1 = [100, 100, 100, 100, 100, 100];
+                dataViewBuilder.valuesValue2 = [400, 400, 400, 400, 400, 400];
+                dataView = dataViewBuilder.getDataView();
+                setSeriesAxis(0, { end: 250 });
+
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const points = getRenderedPoints();
+                const seriesLength = dataViewBuilder.valuesCategory.length;
+
+                expect(points[0].maxValue).toBe(250);
+                expect(points[seriesLength].maxValue).toBe(400);
+            });
+
+            it("falls back to the automatic series range for reversed bounds", () => {
+                dataViewBuilder.valuesValue1 = [100, 200, 100, 200, 100, 200];
+                dataView = dataViewBuilder.getDataView();
+                setSeriesAxis(0, { autoRange: false, start: 500, end: 100 });
+
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const firstPoint = getRenderedPoints()[0];
+                expect(firstPoint.minValue).toBe(0);
+                expect(firstPoint.maxValue).toBe(200);
+            });
+
+            it("builds nullable per-series range controls with Auto placeholders", () => {
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const slices: any[] = (<any>visualBuilder.instance.formattingSettings.categoryAxis).slices;
+                const firstAutoRange = slices[1];
+                const firstStart = slices[2];
+                const firstEnd = slices[3];
+
+                expect(firstAutoRange.name).toBe("autoRange");
+                expect(firstAutoRange.value).toBe(true);
+                expect(firstStart.name).toBe("start");
+                expect(firstStart.value).toBeNull();
+                expect(firstStart.disabled).toBe(true);
+                expect(firstStart.getFormattingComponent("categoryAxis").placeholderText).toBe("Auto");
+                expect(firstEnd.name).toBe("end");
+                expect(firstEnd.value).toBeNull();
+                expect(firstEnd.disabled).toBe(true);
+                expect(firstEnd.getFormattingComponent("categoryAxis").placeholderText).toBe("Auto");
             });
         });
     });
@@ -1117,7 +1262,3 @@ describe("TornadoChart", () => {
         }
     });
 });
-
-function delay(time) {
-    return new Promise(resolve => setTimeout(resolve, time));
-}
