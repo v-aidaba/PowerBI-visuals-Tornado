@@ -278,7 +278,7 @@ class ChartAreaCardSettings extends Card {
         name: "backgroundColor",
         displayName: "Background color",
         displayNameKey: "Visual_BackgroundColor",
-        value: { value: "#B3B3B3" }
+        value: { value: "" }
     });
 
     name: string = "chartArea";

@@ -133,11 +133,16 @@ export class TornadoWebBehavior {
         });
 
         this.legendIcons.style("fill", (legendDataPoint: LegendDataPoint) => {
+            const dimmedColor =
+                this.colorHelper.getThemeColor("foregroundNeutralTertiary")
+                || legendDataPoint.color;
+
             return TornadoChartUtils.getLegendFill(
                 legendDataPoint.selected,
                 legendHasSelection,
                 legendDataPoint.color,
-                this.colorHelper.isHighContrast
+                this.colorHelper.isHighContrast,
+                dimmedColor
             );
         });
 

@@ -384,7 +384,7 @@ describe("TornadoChart", () => {
 
                 const labelsOneSideLength: number = visualBuilder.labelText.length / 2;
                 Array.from(visualBuilder.labelText).forEach((element: Element, index: number) => {
-                    const expectedColor: string = index < labelsOneSideLength ? themeLabel : "#FFFFFF";
+                    const expectedColor: string = index < labelsOneSideLength ? themeLabel : themeBackground;
                     assertColorsMatch(getComputedStyle(element).getPropertyValue("fill"), expectedColor);
                 });
             });
@@ -396,8 +396,9 @@ describe("TornadoChart", () => {
                 expect(formattingSettings.centerLine.color.value.value).toBe(themeForeground);
                 expect(formattingSettings.legend.text.labelColor.value.value).toBe(themeText);
                 expect(formattingSettings.category.fill.value.value).toBe(themeText);
-                expect(formattingSettings.dataLabels.labelsValuesGroup.insideFill.value.value).toBe("#FFFFFF");
+                expect(formattingSettings.dataLabels.labelsValuesGroup.insideFill.value.value).toBe(themeBackground);
                 expect(formattingSettings.dataLabels.labelsValuesGroup.outsideFill.value.value).toBe(themeLabel);
+                expect(formattingSettings.chartArea.backgroundColor.value.value).toBe(themeBackground);
             });
 
             it("preserves explicit author colors over theme tokens", () => {
@@ -438,6 +439,7 @@ describe("TornadoChart", () => {
             it("uses safe text fallbacks when theme tokens are missing", () => {
                 useInsideAndOutsideLabels();
                 enableLegend();
+                const palette = visualBuilder.visualHost.colorPalette;
                 visualBuilder.visualHost.colorPalette.foreground = { value: undefined };
                 visualBuilder.visualHost.colorPalette.background = { value: undefined };
                 visualBuilder.visualHost.colorPalette.foregroundNeutralSecondary = { value: undefined };
@@ -447,18 +449,20 @@ describe("TornadoChart", () => {
                 visualBuilder.updateFlushAllD3Transitions(dataView);
 
                 Array.from(visualBuilder.categoryText).forEach((element: Element) => {
-                    assertColorsMatch(getComputedStyle(element).getPropertyValue("fill"), "#666666");
+                    assertColorsMatch(getComputedStyle(element).getPropertyValue("fill"), palette.foregroundNeutralSecondaryAlt2.value);
                 });
                 Array.from(visualBuilder.legendText).forEach((element: Element) => {
-                    assertColorsMatch(getComputedStyle(element).getPropertyValue("fill"), "#666666");
+                    assertColorsMatch(getComputedStyle(element).getPropertyValue("fill"), palette.foregroundNeutralSecondaryAlt2.value);
                 });
                 Array.from(visualBuilder.axis).forEach((element: Element) => {
-                    assertColorsMatch(getComputedStyle(element).getPropertyValue("stroke"), "#333333");
+                    assertColorsMatch(getComputedStyle(element).getPropertyValue("stroke"), palette.foregroundDark.value);
                 });
 
                 const labelsOneSideLength: number = visualBuilder.labelText.length / 2;
                 Array.from(visualBuilder.labelText).forEach((element: Element, index: number) => {
-                    const expectedColor: string = index < labelsOneSideLength ? "#777777" : "#FFFFFF";
+                    const expectedColor: string = index < labelsOneSideLength
+                        ? palette.foregroundNeutralSecondaryAlt2.value
+                        : palette.backgroundLight.value;
                     assertColorsMatch(getComputedStyle(element).getPropertyValue("fill"), expectedColor);
                 });
             });
@@ -923,8 +927,8 @@ describe("TornadoChart", () => {
                     negativePoint.seriesColor)).toBe(true);
             });
 
-            it("uses the native outside label color over transparent negative bars", () => {
-                const nativeOutsideFill = "#777777";
+            it("keeps inside transparent negative labels independent from outside fill", () => {
+                const themeLabelColor = "#777777";
                 const configuredOutsideFill = "#CC4466";
                 dataViewBuilder.valuesValue1 = [-120000, -45000, 0, 45000, 120000, 60000];
                 dataViewBuilder.valuesValue2 = [0, 0, 0, 0, 0, 0];
@@ -945,7 +949,7 @@ describe("TornadoChart", () => {
                     .find((element: HTMLElement) => (<TornadoChartPoint>(<any>element).__data__).value === -120000)!;
                 const labelText: SVGTextElement = negativeLabel.querySelector("text.label-text")!;
 
-                assertColorsMatch(labelText.getAttribute("fill")!, nativeOutsideFill);
+                assertColorsMatch(labelText.getAttribute("fill")!, themeLabelColor);
             });
 
             it("uses outside fill for labels outside transparent negative bars", () => {
@@ -1207,14 +1211,13 @@ describe("TornadoChart", () => {
                 });
             });
 
-            it("hidden when show is off", (done) => {
+            it("hidden when show is off", () => {
                 (dataView.metadata.objects!).centerLine.show = false;
 
-                visualBuilder.updateRenderTimeout(dataView, () => {
-                    // No center line elements should be rendered when disabled
-                    expect(visualBuilder.axis.length).toBe(0);
-                    done();
-                });
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                // No center line elements should be rendered when disabled
+                expect(visualBuilder.axis.length).toBe(0);
             });
 
             it("color", (done) => {

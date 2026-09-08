@@ -27,7 +27,6 @@
 export class TornadoChartUtils {
     static DimmedOpacity: number = 0.4;
     static DefaultOpacity: number = 1.0;
-    static DimmedColor: string = "#A6A6A6";
 
     static getOpacity(selected: boolean, highlight: boolean, hasSelection: boolean, isHCM: boolean): number {
         if (!highlight && hasSelection && !selected && isHCM) {
@@ -52,10 +51,11 @@ export class TornadoChartUtils {
         selected: boolean,
         hasSelection: boolean,
         defaultColor: string,
-        isHCM: boolean): string {
+        isHCM: boolean,
+        dimmedColor: string): string {
     
         if ((hasSelection && !selected) && !isHCM) {
-            return TornadoChartUtils.DimmedColor;
+            return dimmedColor;
         }
     
         return defaultColor;
