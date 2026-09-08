@@ -378,7 +378,10 @@ describe("TornadoChart", () => {
                 Array.from(visualBuilder.axis).forEach((element: Element) => {
                     assertColorsMatch(getComputedStyle(element).getPropertyValue("stroke"), themeForeground);
                 });
-                Array.from(visualBuilder.legendText).forEach((element: Element) => {
+
+                const legendTextElements = Array.from(visualBuilder.legendText);
+                expect(legendTextElements.length).withContext("legend text should be rendered").toBeGreaterThan(0);
+                legendTextElements.forEach((element: Element) => {
                     assertColorsMatch(getComputedStyle(element).getPropertyValue("fill"), themeText);
                 });
 
@@ -490,23 +493,16 @@ describe("TornadoChart", () => {
                 };
             });
 
-            //Await usage
             it("show", () => {
-                visualBuilder.updateflushAllD3TransitionsRenderTimeout(dataView, async () => {
-                    await delay(defaultAwaitTime);
-                    visualBuilder.labelText.forEach((element) => {
-                        expect(document.body.contains(element)).toBeTruthy();
-                    });
-                    (dataView.metadata.objects!).labels.show = false;
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+                expect(visualBuilder.labels.length).toBeGreaterThan(0);
+                visualBuilder.labelText.forEach((element) => {
+                    expect(document.body.contains(element)).toBeTruthy();
                 });
 
-                visualBuilder.updateflushAllD3TransitionsRenderTimeout(dataView, async () => {
-                    visualBuilder.update(dataView);
-                    await delay(defaultAwaitTime);
-                    visualBuilder.labelText.forEach((element) => {
-                        expect(document.body.contains(element)).toBeFalsy();
-                    });
-                });
+                (dataView.metadata.objects!).labels.show = false;
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+                expect(visualBuilder.labels.length).toBe(0);
             });
 
             it("inside fill", () => {
