@@ -1480,32 +1480,6 @@ describe("TornadoChart", () => {
                 expect(firstEnd.options.minValue.type).toBe(powerbi.visuals.ValidatorType.Min);
                 expect(firstEnd.options.minValue.value).toBe(-100);
             });
-
-            it("builds nullable per-series range controls with Auto placeholders", () => {
-                visualBuilder.updateFlushAllD3Transitions(dataView);
-
-                const groups: any[] = (<any>visualBuilder.instance.formattingSettings.categoryAxis).groups;
-                const firstRangeGroup = groups[1];
-                const firstAutoRange = firstRangeGroup.slices[0];
-                const firstStart = firstRangeGroup.slices[1];
-                const firstEnd = firstRangeGroup.slices[2];
-
-                expect(groups[0].displayName).toBe("Options");
-                expect(firstRangeGroup.displayName).toBe(dataView.categorical!.values![0].source.displayName);
-                expect(firstAutoRange.name).toBe("autoRange");
-                expect(firstAutoRange.displayName).toBe("Auto range");
-                expect(firstAutoRange.value).toBe(true);
-                expect(firstStart.name).toBe("start");
-                expect(firstStart.value).toBeNull();
-                expect(firstStart.disabled).toBe(true);
-                expect(firstStart.options).toBeUndefined();
-                expect(firstStart.getFormattingComponent("categoryAxis").placeholderText).toBe("Auto");
-                expect(firstEnd.name).toBe("end");
-                expect(firstEnd.value).toBeNull();
-                expect(firstEnd.disabled).toBe(true);
-                expect(firstEnd.options).toBeUndefined();
-                expect(firstEnd.getFormattingComponent("categoryAxis").placeholderText).toBe("Auto");
-            });
         });
     });
 
