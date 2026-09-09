@@ -627,6 +627,17 @@ describe("TornadoChart", () => {
                     texts.forEach((text: string) => expect(text).toMatch(/^-?\d+\.\d%$/));
                 });
 
+                it("caps automatic percentage decimal places", () => {
+                    (dataView.metadata.objects!).labels.displayFormat = "percentage";
+                    (dataView.metadata.objects!).labels.labelPrecision = 17;
+                    (dataView.metadata.objects!).labels.percentagePrecision = NaN;
+                    visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                    const texts: string[] = getAllLabelTexts();
+                    expect(texts.length).toBeGreaterThan(0);
+                    texts.forEach((text: string) => expect(text).toMatch(/^-?\d+\.\d{10}%$/));
+                });
+
                 it("falls back safely when decimal places is not finite", () => {
                     (dataView.metadata.objects!).labels.displayFormat = "value";
                     (dataView.metadata.objects!).labels.labelPrecision = NaN;

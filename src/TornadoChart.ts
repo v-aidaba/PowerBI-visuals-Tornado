@@ -810,7 +810,7 @@ export class TornadoChart implements IVisual {
         const precision = labelsSettings.labelsValuesGroup.percentagePrecision.value;
         return Number.isFinite(precision)
             ? Math.min(Math.max(0, precision), 10)
-            : TornadoChart.getPrecision(labelsSettings);
+            : Math.min(TornadoChart.getPrecision(labelsSettings), 10);
     }
 
     private static getLegendData(series: TornadoChartSeries[], hasDynamicSeries: boolean): LegendData {
