@@ -77,15 +77,17 @@ class NegativeBarsColorGroup extends Card {
 }
 
 class NegativeBarsBorderGroup extends Card {
-    constructor(slices: formattingSettings.Slice[]) {
+    constructor(slices: formattingSettings.Slice[], topLevelSlice: formattingSettings.ToggleSwitch) {
         super();
         this.slices = slices;
+        this.topLevelSlice = topLevelSlice;
     }
 
     name: string = "negativeBarsBorder";
     displayName: string = "Border";
     displayNameKey: string = "Visual_Border";
     slices: formattingSettings.Slice[];
+    topLevelSlice: formattingSettings.ToggleSwitch;
 }
 
 class NegativeBarsCardSettings extends CompositeCard {
@@ -122,6 +124,13 @@ class NegativeBarsCardSettings extends CompositeCard {
                 value: 100,
             }
         }
+    });
+
+    showBorder = new formattingSettings.ToggleSwitch({
+        name: "showBorder",
+        displayName: "Border",
+        displayNameKey: "Visual_Border",
+        value: true
     });
 
     borderColor = new formattingSettings.ColorPicker({
@@ -173,20 +182,22 @@ class NegativeBarsCardSettings extends CompositeCard {
     displayName: string = "Negative bars";
     displayNameKey: string = "Visual_NegativeBars";
     colorGroup = new NegativeBarsColorGroup([this.fill, this.transparency]);
-    borderGroup = new NegativeBarsBorderGroup([this.borderColor, this.borderWidth, this.cornerRadius]);
+    borderGroup = new NegativeBarsBorderGroup([this.borderColor, this.borderWidth, this.cornerRadius], this.showBorder);
     groups: formattingSettings.Group[] = [this.colorGroup, this.borderGroup];
 }
 
 class BarAppearanceBorderGroup extends Card {
-    constructor(slices: formattingSettings.Slice[]) {
+    constructor(slices: formattingSettings.Slice[], topLevelSlice: formattingSettings.ToggleSwitch) {
         super();
         this.slices = slices;
+        this.topLevelSlice = topLevelSlice;
     }
 
     name: string = "barAppearanceBorder";
     displayName: string = "Border";
     displayNameKey: string = "Visual_Border";
     slices: formattingSettings.Slice[];
+    topLevelSlice: formattingSettings.ToggleSwitch;
 }
 
 class BarAppearanceLayoutGroup extends Card {
@@ -202,6 +213,13 @@ class BarAppearanceLayoutGroup extends Card {
 }
 
 class BarAppearanceCardSettings extends CompositeCard {
+    showBorder = new formattingSettings.ToggleSwitch({
+        name: "showBorder",
+        displayName: "Border",
+        displayNameKey: "Visual_Border",
+        value: false
+    });
+
     borderColor = new formattingSettings.ColorPicker({
         name: "borderColor",
         displayName: "Color",
@@ -213,7 +231,7 @@ class BarAppearanceCardSettings extends CompositeCard {
         name: "borderWidth",
         displayName: "Width",
         displayNameKey: "Visual_Width",
-        value: 0,
+        value: 2,
         options: {
             unitSymbol: "px",
             unitSymbolAfterInput: true,
@@ -251,7 +269,7 @@ class BarAppearanceCardSettings extends CompositeCard {
         name: "barSpacing",
         displayName: "Space between bars",
         displayNameKey: "Visual_BarSpacing",
-        value: 0,
+        value: 16,
         options: {
             unitSymbol: "%",
             unitSymbolAfterInput: true,
@@ -269,7 +287,7 @@ class BarAppearanceCardSettings extends CompositeCard {
     name: string = "barAppearance";
     displayName: string = "Bar appearance";
     displayNameKey: string = "Visual_BarAppearance";
-    borderGroup = new BarAppearanceBorderGroup([this.borderColor, this.borderWidth, this.cornerRadius]);
+    borderGroup = new BarAppearanceBorderGroup([this.borderColor, this.borderWidth, this.cornerRadius], this.showBorder);
     layoutGroup = new BarAppearanceLayoutGroup([this.barSpacing]);
     groups: formattingSettings.Group[] = [this.borderGroup, this.layoutGroup];
 }
@@ -578,7 +596,7 @@ class LegendOptionsGroup extends Card {
 
 class LegendTextGroup extends Card {
     public defaultLabelColor: string = "";
-    public defaultFontSize: number = 12;
+    public defaultFontSize: number = 8;
 
     public labelColor = new formattingSettings.ColorPicker({
         name: "labelColor",
@@ -732,7 +750,7 @@ export class CategoryCardSettings extends CompositeCard {
     
     topLevelSlice? = this.show;
 
-    font: formattingSettings.FontControl = new BaseFontControlSettings(10.5);
+    font: formattingSettings.FontControl = new BaseFontControlSettings(8);
 
     fill = new formattingSettings.ColorPicker({
         name: "fill",
@@ -796,6 +814,16 @@ export class TornadoChartSettingsModel extends Model {
 
     public setVisibilityOfLegendCardSettings(legend: LegendData){
         this.legend.visible = legend.dataPoints.length > 0;
+    }
+
+    public updateDataLabelControlsState(): void {
+        const displayMode = this.dataLabels.labelsOptionsGroup.displayFormat.value.value;
+        const includesValue = displayMode !== LabelDisplayMode.Percentage;
+        const includesPercentage = displayMode !== LabelDisplayMode.Value;
+
+        this.dataLabels.labelsValuesGroup.labelPrecision.disabled = !includesValue;
+        this.dataLabels.labelsValuesGroup.labelDisplayUnits.disabled = !includesValue;
+        this.dataLabels.labelsValuesGroup.percentagePrecision.disabled = !includesPercentage;
     }
     
     public populateDataColorSlice(dataPoints: TornadoChartSeries[]){

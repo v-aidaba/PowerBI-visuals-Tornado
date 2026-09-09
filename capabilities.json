@@ -88,6 +88,11 @@
         },
         "barAppearance": {
             "properties": {
+                "showBorder": {
+                    "type": {
+                        "bool": true
+                    }
+                },
                 "borderColor": {
                     "type": {
                         "fill": {
@@ -117,6 +122,11 @@
         "negativeBars": {
             "properties": {
                 "show": {
+                    "type": {
+                        "bool": true
+                    }
+                },
+                "showBorder": {
                     "type": {
                         "bool": true
                     }

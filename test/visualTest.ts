@@ -591,6 +591,17 @@ describe("TornadoChart", () => {
                         .flatMap((label) => Array.from(label.querySelectorAll("text.label-text")))
                         .map((element) => element.textContent || "");
 
+                const expectControlState = (
+                    valueDisabled: boolean,
+                    percentageDisabled: boolean,
+                    displayUnitsDisabled: boolean
+                ): void => {
+                    const valuesGroup = visualBuilder.instance.formattingSettings.dataLabels.labelsValuesGroup;
+                    expect(valuesGroup.labelPrecision.disabled).toBe(valueDisabled);
+                    expect(valuesGroup.percentagePrecision.disabled).toBe(percentageDisabled);
+                    expect(valuesGroup.labelDisplayUnits.disabled).toBe(displayUnitsDisabled);
+                };
+
                 beforeEach(() => {
                     // Use a plain numeric format so the value part never contains a "%"
                     dataView.categorical!.values!.forEach((column: DataViewValueColumn) => {
@@ -614,6 +625,20 @@ describe("TornadoChart", () => {
                     const texts: string[] = getAllLabelTexts();
                     expect(texts.length).toBeGreaterThan(0);
                     expect(texts.some((text: string) => text.trim().endsWith("%"))).toBeTrue();
+                });
+
+                it("enables decimal places and display units for the selected content", () => {
+                    (dataView.metadata.objects!).labels.displayFormat = "value";
+                    visualBuilder.updateFlushAllD3Transitions(dataView);
+                    expectControlState(false, true, false);
+
+                    (dataView.metadata.objects!).labels.displayFormat = "percentage";
+                    visualBuilder.updateFlushAllD3Transitions(dataView);
+                    expectControlState(true, false, true);
+
+                    (dataView.metadata.objects!).labels.displayFormat = "valueAndPercentage";
+                    visualBuilder.updateFlushAllD3Transitions(dataView);
+                    expectControlState(false, false, false);
                 });
 
                 it("uses percentage decimal places independently", () => {
@@ -971,16 +996,39 @@ describe("TornadoChart", () => {
                     negativePoint.seriesColor)).toBe(true);
             });
 
-            it("keeps inside transparent negative labels independent from outside fill", () => {
-                const themeLabelColor = "#777777";
+            it("uses inside fill for labels inside transparent negative bars", () => {
+                const insideFill = "#55AA77";
                 const configuredOutsideFill = "#CC4466";
                 dataViewBuilder.valuesValue1 = [-120000, -45000, 0, 45000, 120000, 60000];
                 dataViewBuilder.valuesValue2 = [0, 0, 0, 0, 0, 0];
                 dataView = dataViewBuilder.getDataView();
                 dataView.metadata.objects = {
                     labels: {
+                        insideFill: getSolidColorStructuralObject(insideFill),
                         outsideFill: getSolidColorStructuralObject(configuredOutsideFill)
                     },
+                    negativeBars: {
+                        show: true,
+                        transparency: 100
+                    }
+                };
+
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const negativeLabel: HTMLElement = Array.from(visualBuilder.labels)
+                    .find((element: HTMLElement) => (<TornadoChartPoint>(<any>element).__data__).value === -120000)!;
+                const labelText: SVGTextElement = negativeLabel.querySelector("text.label-text")!;
+
+                assertColorsMatch(labelText.getAttribute("fill")!, insideFill);
+            });
+
+            it("keeps labels visible inside transparent negative bars with the default fill", () => {
+                const themeLabelColor = "#777777";
+                dataViewBuilder.valuesValue1 = [-120000, -45000, 0, 45000, 120000, 60000];
+                dataViewBuilder.valuesValue2 = [0, 0, 0, 0, 0, 0];
+                dataView = dataViewBuilder.getDataView();
+                dataView.metadata.objects = {
+                    labels: {},
                     negativeBars: {
                         show: true,
                         transparency: 100
@@ -1031,7 +1079,7 @@ describe("TornadoChart", () => {
                     },
                     negativeBars: {
                         show: true,
-                        transparency: 50
+                        transparency: 100
                     }
                 };
 
@@ -1141,6 +1189,23 @@ describe("TornadoChart", () => {
                 });
             });
 
+            it("shows the border by default", () => {
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const negativeColumn: SVGPathElement = Array.from(visualBuilder.columns)
+                    .find((element: SVGPathElement) => (<TornadoChartPoint>(<any>element).__data__).value < 0)!;
+                expect(getComputedStyle(negativeColumn).getPropertyValue("stroke-width")).toBe("2px");
+            });
+
+            it("hides the border when disabled", () => {
+                (dataView.metadata.objects!).negativeBars.showBorder = false;
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const negativeColumn: SVGPathElement = Array.from(visualBuilder.columns)
+                    .find((element: SVGPathElement) => (<TornadoChartPoint>(<any>element).__data__).value < 0)!;
+                expect(getComputedStyle(negativeColumn).getPropertyValue("stroke-width")).toBe("0px");
+            });
+
             it("borderWidth", (done) => {
                 (dataView.metadata.objects!).negativeBars.borderWidth = 5;
 
@@ -1182,6 +1247,7 @@ describe("TornadoChart", () => {
 
             it("borderColor", () => {
                 const color: string = "#CCDDEE";
+                (dataView.metadata.objects!).barAppearance.showBorder = true;
                 (dataView.metadata.objects!).barAppearance.borderColor = getSolidColorStructuralObject(color);
 
                 visualBuilder.updateFlushAllD3Transitions(dataView);
@@ -1193,16 +1259,33 @@ describe("TornadoChart", () => {
                 expect(strokeMatches).toBe(true);
             });
 
-            it("borderWidth", (done) => {
+            it("hides the border by default", () => {
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const widths: string[] = Array.from(visualBuilder.columns)
+                    .map((element: Element) => getComputedStyle(element).getPropertyValue("stroke-width"));
+                expect(widths.every((width: string) => width === "0px")).toBe(true);
+            });
+
+            it("shows the border with the default width when enabled", () => {
+                (dataView.metadata.objects!).barAppearance.showBorder = true;
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const widths: string[] = Array.from(visualBuilder.columns)
+                    .map((element: Element) => getComputedStyle(element).getPropertyValue("stroke-width"));
+                expect(widths.every((width: string) => width === "2px")).toBe(true);
+            });
+
+            it("borderWidth", () => {
+                (dataView.metadata.objects!).barAppearance.showBorder = true;
                 (dataView.metadata.objects!).barAppearance.borderWidth = 3;
 
-                visualBuilder.updateRenderTimeout(dataView, () => {
-                    // At least one column should render with the configured stroke width
-                    const widthMatches: boolean = Array.from(visualBuilder.columns)
-                        .some((element: Element) => getComputedStyle(element).getPropertyValue("stroke-width") === "3px");
-                    expect(widthMatches).toBe(true);
-                    done();
-                });
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                // At least one column should render with the configured stroke width
+                const widthMatches: boolean = Array.from(visualBuilder.columns)
+                    .some((element: Element) => getComputedStyle(element).getPropertyValue("stroke-width") === "3px");
+                expect(widthMatches).toBe(true);
             });
 
             it("cornerRadius", () => {
@@ -1225,6 +1308,7 @@ describe("TornadoChart", () => {
                     .map((element: Element) => element.getAttribute("transform") || "");
 
                 visualBuilder.updateFlushAllD3Transitions(dataView);
+                expect(visualBuilder.instance.formattingSettings.barAppearance.barSpacing.value).toBe(16);
                 const before: string[] = getTransforms();
 
                 (dataView.metadata.objects!).barAppearance.barSpacing = 25;
@@ -1233,6 +1317,18 @@ describe("TornadoChart", () => {
 
                 // Changing bar spacing should reposition/resize the rendered columns
                 expect(after).not.toEqual(before);
+            });
+
+            it("removes the space between bars at zero", () => {
+                (dataView.metadata.objects!).barAppearance.barSpacing = 0;
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const points: TornadoChartPoint[] = Array.from(visualBuilder.columns)
+                    .map((element: SVGPathElement) => <TornadoChartPoint>(<any>element).__data__);
+                const firstPoint = points[0];
+                const secondPoint = points[1];
+
+                expect(secondPoint.dy).toBeCloseTo(firstPoint.dy! + firstPoint.height!, 5);
             });
         });
 
