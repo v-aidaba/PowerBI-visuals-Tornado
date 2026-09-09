@@ -4,6 +4,8 @@
 * Kept negative data labels readable when negative bars use the default transparent fill
 * Added Auto, Outside end, Inside end, Inside center, and Inside base data-label position options
 * Updated default series, category, legend, axis, and data-label colors to follow the active report theme
+* Reorganized formatting pane settings for clearer configuration
+* Added configurable decimal precision for percentage data labels
 
 ## 3.2.1.0
 * Added new translations
