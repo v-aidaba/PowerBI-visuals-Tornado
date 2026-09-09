@@ -131,14 +131,14 @@ export class TornadoChartBuilder extends VisualBuilderBase<VisualClass> {
             index,
             isGrouped,
             columnGroup,
-            this.visual.colors);
+            this.visual.colorHelper);
     }
 
     public converter(dataView: DataView, formattingSettings: TornadoChartSettingsModel): TornadoChartDataView {
         return VisualClass.converter(
             dataView,
             this.visualHost,
-            this.visual.colors,
+            this.visual.colorHelper,
             this.visualHost.createLocalizationManager(),
             formattingSettings
         );
