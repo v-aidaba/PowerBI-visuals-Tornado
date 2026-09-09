@@ -782,6 +782,13 @@ export class TornadoChart implements IVisual {
         return Math.min(Math.max(0, precision), TornadoChart.MaxPrecision);
     }
 
+    private static getPercentagePrecision(labelsSettings: DataLabelSettings): number {
+        const precision = labelsSettings.labelsValuesGroup.percentagePrecision.value;
+        return Number.isFinite(precision)
+            ? Math.min(Math.max(0, precision), 10)
+            : TornadoChart.getPrecision(labelsSettings);
+    }
+
     private static getLegendData(series: TornadoChartSeries[], hasDynamicSeries: boolean): LegendData {
         let legendDataPoints: LegendDataPoint[] = [];
         if (hasDynamicSeries)
@@ -1269,9 +1276,9 @@ export class TornadoChart implements IVisual {
         displayMode: string = this.formattingSettings.dataLabels.labelsOptionsGroup.displayFormat?.value?.value?.toString()
             ?? LabelDisplayMode.Value): string {
 
-        const precision = TornadoChart.getPrecision(this.formattingSettings.dataLabels);
+        const percentagePrecision = TornadoChart.getPercentagePrecision(this.formattingSettings.dataLabels);
         const formattedValue = labelFormatter.getLabelValueFormatter!(formatStringProp).format(value);
-        const formattedPercentage = percentage.toFixed(precision) + "%";
+        const formattedPercentage = percentage.toFixed(percentagePrecision) + "%";
 
         switch (displayMode) {
             case LabelDisplayMode.Percentage:

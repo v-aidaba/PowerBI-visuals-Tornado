@@ -600,6 +600,17 @@ describe("TornadoChart", () => {
                     expect(texts.some((text: string) => text.trim().endsWith("%"))).toBeTrue();
                 });
 
+                it("uses percentage decimal places independently", () => {
+                    (dataView.metadata.objects!).labels.displayFormat = "percentage";
+                    (dataView.metadata.objects!).labels.labelPrecision = 3;
+                    (dataView.metadata.objects!).labels.percentagePrecision = 1;
+                    visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                    const texts: string[] = getAllLabelTexts();
+                    expect(texts.length).toBeGreaterThan(0);
+                    texts.forEach((text: string) => expect(text).toMatch(/^-?\d+\.\d%$/));
+                });
+
                 it("Value (%) mode renders value and percentage together", () => {
                     (dataView.metadata.objects!).labels.displayFormat = "valueAndPercentage";
                     visualBuilder.updateFlushAllD3Transitions(dataView);

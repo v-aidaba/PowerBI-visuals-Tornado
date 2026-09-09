@@ -36,10 +36,10 @@ class DataColorCardSettings extends Card {
     });
 
     name: string = TornadoObjectNames.DataPoint;
-    displayName: string = "Data colors";
-    displayNameKey: string = "Visual_DataColors";
-    description: string = "Display data color options";
-    descriptionKey: string = "Visual_Description_DataColors";
+    displayName: string = "Bars";
+    displayNameKey: string = "Visual_Bars";
+    description: string = "Display bar color options";
+    descriptionKey: string = "Visual_Description_Bars";
     slices = [this.fill];
 }
 
@@ -59,12 +59,36 @@ class CategoryAxisCardSettings extends Card {
     });
 
     name: string = "categoryAxis";
-    displayName: string = "X-Axis";
+    displayName: string = "X-axis";
     displayNameKey: string = "Visual_XAxis";
     slices = [this.normalize, this.end];
 }
 
-class NegativeBarsCardSettings extends Card {
+class NegativeBarsColorGroup extends Card {
+    constructor(slices: formattingSettings.Slice[]) {
+        super();
+        this.slices = slices;
+    }
+
+    name: string = "negativeBarsColor";
+    displayName: string = "Color";
+    displayNameKey: string = "Visual_Color";
+    slices: formattingSettings.Slice[];
+}
+
+class NegativeBarsBorderGroup extends Card {
+    constructor(slices: formattingSettings.Slice[]) {
+        super();
+        this.slices = slices;
+    }
+
+    name: string = "negativeBarsBorder";
+    displayName: string = "Border";
+    displayNameKey: string = "Visual_Border";
+    slices: formattingSettings.Slice[];
+}
+
+class NegativeBarsCardSettings extends CompositeCard {
     show = new formattingSettings.ToggleSwitch({
         name: "show",
         displayName: "Show",
@@ -102,15 +126,15 @@ class NegativeBarsCardSettings extends Card {
 
     borderColor = new formattingSettings.ColorPicker({
         name: "borderColor",
-        displayName: "Border color",
-        displayNameKey: "Visual_BorderColor",
+        displayName: "Color",
+        displayNameKey: "Visual_Color",
         value: { value: "" }
     });
 
     borderWidth = new formattingSettings.Slider({
         name: "borderWidth",
-        displayName: "Border width",
-        displayNameKey: "Visual_BorderWidth",
+        displayName: "Width",
+        displayNameKey: "Visual_Width",
         value: 2,
         options: {
             unitSymbol: "px",
@@ -148,21 +172,47 @@ class NegativeBarsCardSettings extends Card {
     name: string = "negativeBars";
     displayName: string = "Negative bars";
     displayNameKey: string = "Visual_NegativeBars";
-    slices = [this.fill, this.transparency, this.borderColor, this.borderWidth, this.cornerRadius];
+    colorGroup = new NegativeBarsColorGroup([this.fill, this.transparency]);
+    borderGroup = new NegativeBarsBorderGroup([this.borderColor, this.borderWidth, this.cornerRadius]);
+    groups: formattingSettings.Group[] = [this.colorGroup, this.borderGroup];
 }
 
-class BarAppearanceCardSettings extends Card {
+class BarAppearanceBorderGroup extends Card {
+    constructor(slices: formattingSettings.Slice[]) {
+        super();
+        this.slices = slices;
+    }
+
+    name: string = "barAppearanceBorder";
+    displayName: string = "Border";
+    displayNameKey: string = "Visual_Border";
+    slices: formattingSettings.Slice[];
+}
+
+class BarAppearanceLayoutGroup extends Card {
+    constructor(slices: formattingSettings.Slice[]) {
+        super();
+        this.slices = slices;
+    }
+
+    name: string = "barAppearanceLayout";
+    displayName: string = "Layout";
+    displayNameKey: string = "Visual_Layout";
+    slices: formattingSettings.Slice[];
+}
+
+class BarAppearanceCardSettings extends CompositeCard {
     borderColor = new formattingSettings.ColorPicker({
         name: "borderColor",
-        displayName: "Border color",
-        displayNameKey: "Visual_BorderColor",
+        displayName: "Color",
+        displayNameKey: "Visual_Color",
         value: { value: "" }
     });
 
     borderWidth = new formattingSettings.Slider({
         name: "borderWidth",
-        displayName: "Border width",
-        displayNameKey: "Visual_BorderWidth",
+        displayName: "Width",
+        displayNameKey: "Visual_Width",
         value: 0,
         options: {
             unitSymbol: "px",
@@ -219,7 +269,9 @@ class BarAppearanceCardSettings extends Card {
     name: string = "barAppearance";
     displayName: string = "Bar appearance";
     displayNameKey: string = "Visual_BarAppearance";
-    slices = [this.borderColor, this.borderWidth, this.cornerRadius, this.barSpacing];
+    borderGroup = new BarAppearanceBorderGroup([this.borderColor, this.borderWidth, this.cornerRadius]);
+    layoutGroup = new BarAppearanceLayoutGroup([this.barSpacing]);
+    groups: formattingSettings.Group[] = [this.borderGroup, this.layoutGroup];
 }
 
 class CenterLineCardSettings extends Card {
@@ -276,14 +328,14 @@ class ChartAreaCardSettings extends Card {
 
     backgroundColor = new formattingSettings.ColorPicker({
         name: "backgroundColor",
-        displayName: "Background color",
-        displayNameKey: "Visual_BackgroundColor",
+        displayName: "Color",
+        displayNameKey: "Visual_Color",
         value: { value: "" }
     });
 
     name: string = "chartArea";
-    displayName: string = "Chart Area";
-    displayNameKey: string = "Visual_ChartArea";
+    displayName: string = "Plot area background";
+    displayNameKey: string = "Visual_PlotAreaBackground";
     slices = [this.backgroundColor];
 }
 
@@ -343,9 +395,9 @@ class LabelsValuesGroup extends Card {
 
     labelPrecision = new formattingSettings.NumUpDown({
         name: "labelPrecision",
-        displayName: "Decimal Places",
+        displayName: "Decimal places",
         displayNameKey: "Visual_DataLabels_DecimalPlaces",
-        value: 0,
+        value:  <number><unknown>null,
         options: {
             minValue: {
                 type: powerbiVisualsApi.visuals.ValidatorType.Min,
@@ -358,9 +410,26 @@ class LabelsValuesGroup extends Card {
         }
     });
 
+    percentagePrecision = new formattingSettings.NumUpDown({
+        name: "percentagePrecision",
+        displayName: "Percentage decimal places",
+        displayNameKey: "Visual_DataLabels_PercentageDecimalPlaces",
+        value: <number><unknown>null,
+        options: {
+            minValue: {
+                type: powerbiVisualsApi.visuals.ValidatorType.Min,
+                value: 0,
+            },
+            maxValue: {
+                type: powerbiVisualsApi.visuals.ValidatorType.Max,
+                value: 10,
+            }
+        }
+    });
+
     labelDisplayUnits = new formattingSettings.AutoDropdown({
         name: "labelDisplayUnits",
-        displayName: "Display Units",
+        displayName: "Display units",
         displayNameKey: "Visual_DisplayUnits",
         value: 1
     });
@@ -389,7 +458,19 @@ class LabelsValuesGroup extends Card {
     name: string = "values";
     displayName: string = "Values";
     displayNameKey: string = "Visual_Values";
-    slices = [this.font, this.labelPrecision, this.labelDisplayUnits, this.insideFill, this.outsideFill, this.negativeFill];
+    slices = [this.font, this.labelPrecision, this.percentagePrecision, this.labelDisplayUnits];
+}
+
+class LabelsColorGroup extends Card {
+    constructor(valuesGroup: LabelsValuesGroup) {
+        super();
+        this.slices = [valuesGroup.insideFill, valuesGroup.outsideFill, valuesGroup.negativeFill];
+    }
+
+    name: string = "color";
+    displayName: string = "Color";
+    displayNameKey: string = "Visual_Color";
+    slices: formattingSettings.Slice[];
 }
 
 export class DataLabelSettings extends CompositeCard {
@@ -404,11 +485,12 @@ export class DataLabelSettings extends CompositeCard {
 
     public labelsOptionsGroup: LabelsOptionsGroup = new LabelsOptionsGroup();
     public labelsValuesGroup: LabelsValuesGroup = new LabelsValuesGroup();
+    public labelsColorGroup: LabelsColorGroup = new LabelsColorGroup(this.labelsValuesGroup);
 
     name: string = "labels";
-    displayName: string = "Data Labels";
+    displayName: string = "Data labels";
     displayNameKey: string = "Visual_DataLabels";
-    groups: formattingSettings.Group[] = [this.labelsOptionsGroup, this.labelsValuesGroup];
+    groups: formattingSettings.Group[] = [this.labelsOptionsGroup, this.labelsValuesGroup, this.labelsColorGroup];
 }
 
 interface IEnumMemberWithDisplayNameKey extends IEnumMember{
@@ -420,10 +502,10 @@ const positionOptions : IEnumMemberWithDisplayNameKey[] = [
     {value : LegendPosition[LegendPosition.Bottom], displayName : "Bottom", key: "Visual_Legend_Position_Bottom"},
     {value : LegendPosition[LegendPosition.Left], displayName : "Left", key: "Visual_Legend_Position_Left"}, 
     {value : LegendPosition[LegendPosition.Right], displayName : "Right", key: "Visual_Legend_Position_Right"}, 
-    {value : LegendPosition[LegendPosition.TopCenter], displayName : "Top Center", key: "Visual_Legend_Position_Top_Center"}, 
-    {value : LegendPosition[LegendPosition.BottomCenter], displayName : "Bottom Center", key: "Visual_Legend_Position_Bottom_Center"}, 
-    {value : LegendPosition[LegendPosition.LeftCenter], displayName : "Left Center", key: "Visual_Legend_Position_Left_Center"}, 
-    {value : LegendPosition[LegendPosition.RightCenter], displayName : "Right Center", key: "Visual_Legend_Position_Right_Center"}, 
+    {value : LegendPosition[LegendPosition.TopCenter], displayName : "Top center", key: "Visual_Legend_Position_Top_Center"},
+    {value : LegendPosition[LegendPosition.BottomCenter], displayName : "Bottom center", key: "Visual_Legend_Position_Bottom_Center"},
+    {value : LegendPosition[LegendPosition.LeftCenter], displayName : "Left center", key: "Visual_Legend_Position_Left_Center"},
+    {value : LegendPosition[LegendPosition.RightCenter], displayName : "Right center", key: "Visual_Legend_Position_Right_Center"},
 ];
 
 class BaseFontCardSettings extends formattingSettings.FontControl {
@@ -440,6 +522,7 @@ class BaseFontCardSettings extends formattingSettings.FontControl {
         super(
             new formattingSettings.FontControl({
                 name: BaseFontCardSettings.fontName + settingName,
+                displayName: "Font",
                 displayNameKey: "Visual_FontControl",
                 fontFamily: new formattingSettings.FontPicker({
                     name: BaseFontCardSettings.fontFamilyName + settingName,
@@ -499,7 +582,8 @@ class LegendTextGroup extends Card {
 
     public labelColor = new formattingSettings.ColorPicker({
         name: "labelColor",
-        displayNameKey: "Visual_LabelColor",
+        displayName: "Color",
+        displayNameKey: "Visual_Color",
         value: { value: this.defaultLabelColor },
     });
 
@@ -525,9 +609,10 @@ class LegendTitleGroup extends Card {
 
     public titleText = new formattingSettings.TextInput({
         name: "titleText",
-        displayNameKey: "Visual_TitleText",
+        displayName: "Text",
+        displayNameKey: "Visual_Text",
         value: this.defaultTitleText,
-        placeholder: "Title text",
+        placeholder: "Text",
     });
 
     name: string = TornadoObjectNames.LegendTitle;
@@ -574,13 +659,15 @@ export class BaseFontControlSettings extends formattingSettings.FontControl {
         super(
             new formattingSettings.FontControl({
                 name: "font",
+                displayName: "Font",
+                displayNameKey: "Visual_FontControl",
                 fontFamily: new formattingSettings.FontPicker({
                     name: "fontFamily",
                     value: FontDefaultOptions.DefaultFontFamily
                 }),
                 fontSize: new formattingSettings.NumUpDown({
                     name: "fontSize",
-                    displayName: "Text Size",
+                    displayName: "Text size",
                     displayNameKey: "Visual_TextSize",
                     value: defaultFontSize,
                     options: {
@@ -611,7 +698,31 @@ export class BaseFontControlSettings extends formattingSettings.FontControl {
     }
 }
 
-export class CategoryCardSettings extends Card {
+class CategoryOptionsGroup extends Card {
+    constructor(position: formattingSettings.ItemDropdown) {
+        super();
+        this.slices = [position];
+    }
+
+    name: string = "categoryOptions";
+    displayName: string = "Options";
+    displayNameKey: string = "Visual_Options";
+    slices: formattingSettings.Slice[];
+}
+
+class CategoryTextGroup extends Card {
+    constructor(font: formattingSettings.FontControl, fill: formattingSettings.ColorPicker) {
+        super();
+        this.slices = [font, fill];
+    }
+
+    name: string = "categoryText";
+    displayName: string = "Text";
+    displayNameKey: string = "Visual_Text";
+    slices: formattingSettings.Slice[];
+}
+
+export class CategoryCardSettings extends CompositeCard {
     show = new formattingSettings.ToggleSwitch({
         name: "show",
         displayName: "Show",
@@ -641,7 +752,9 @@ export class CategoryCardSettings extends Card {
     name: string = TornadoObjectNames.Categories;
     displayName: string = "Group";
     displayNameKey: string = "Visual_Group";
-    slices = [this.positionDropdown, this.font, this.fill];
+    optionsGroup = new CategoryOptionsGroup(this.positionDropdown);
+    textGroup = new CategoryTextGroup(this.font, this.fill);
+    groups: formattingSettings.Group[] = [this.optionsGroup, this.textGroup];
 }
 
 
@@ -658,13 +771,13 @@ export class TornadoChartSettingsModel extends Model {
 
     cards = [
         this.dataColors,
-        this.categoryAxis,
         this.barAppearance,
         this.negativeBars,
-        this.centerLine,
         this.dataLabels,
-        this.legend,
         this.category,
+        this.categoryAxis,
+        this.legend,
+        this.centerLine,
         this.chartArea
     ];
 

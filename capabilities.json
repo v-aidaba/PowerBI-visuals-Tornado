@@ -245,6 +245,12 @@
                         "integer": true
                     }
                 },
+                "percentagePrecision": {
+                    "placeHolderText": "Auto",
+                    "type": {
+                        "integer": true
+                    }
+                },
                 "fontSize": { 
                     "type": {
                         "formatting": {
