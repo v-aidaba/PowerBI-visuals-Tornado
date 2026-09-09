@@ -1311,18 +1311,17 @@ describe("TornadoChart", () => {
                 expect(fill).toBe("none");
             });
 
-            it("backgroundColor", (done) => {
+            it("backgroundColor", () => {
                 const color: string = "#EEFFAA";
                 (dataView.metadata.objects!).chartArea.backgroundColor = getSolidColorStructuralObject(color);
 
-                visualBuilder.updateRenderTimeout(dataView, () => {
-                    expect(dataView.metadata.objects!["chartArea"].backgroundColor).toBeDefined();
-                    // The background rect fill should match the configured color when shown
-                    assertColorsMatch(
-                        getComputedStyle(visualBuilder.chartAreaBackground).getPropertyValue("fill"),
-                        color);
-                    done();
-                });
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                expect(dataView.metadata.objects!["chartArea"].backgroundColor).toBeDefined();
+                // The background rect fill should match the configured color when shown
+                assertColorsMatch(
+                    getComputedStyle(visualBuilder.chartAreaBackground).getPropertyValue("fill"),
+                    color);
             });
         });
 
