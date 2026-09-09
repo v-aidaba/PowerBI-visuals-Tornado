@@ -14,18 +14,6 @@ import IEnumMember = powerbi.IEnumMember;
 import ILocalizationManager = powerbi.extensibility.ILocalizationManager;
 import { LegendData } from "powerbi-visuals-utils-chartutils/lib/legend/legendInterfaces";
 
-class NullableNumUpDown extends formattingSettings.NumUpDown {
-    public placeholderText: string = "Auto";
-    public placeholderTextKey: string = "Visual_Auto";
-
-    public getFormattingComponent(objectName: string, localizationManager?: ILocalizationManager): any {
-        return {
-            ...super.getFormattingComponent(objectName),
-            placeholderText: localizationManager?.getDisplayName(this.placeholderTextKey) || this.placeholderText
-        };
-    }
-}
-
 export const enum TornadoObjectNames {
     Legend = "legend",
     LegendTitle = "legendTitle",
@@ -55,7 +43,35 @@ class DataColorCardSettings extends Card {
     slices = [this.fill];
 }
 
-class CategoryAxisCardSettings extends Card {
+class CategoryAxisOptionsGroup extends Card {
+    constructor(normalize: formattingSettings.ToggleSwitch) {
+        super();
+        this.slices = [normalize];
+    }
+
+    name: string = "categoryAxisOptions";
+    displayName: string = "Options";
+    displayNameKey: string = "Visual_Options";
+    slices: formattingSettings.Slice[];
+}
+
+class CategoryAxisRangeGroup extends Card {
+    constructor(
+        index: number,
+        displayName: string,
+        slices: formattingSettings.Slice[]) {
+        super();
+        this.name = `categoryAxisRange${index}`;
+        this.displayName = displayName;
+        this.slices = slices;
+    }
+
+    name: string;
+    displayName: string;
+    slices: formattingSettings.Slice[];
+}
+
+class CategoryAxisCardSettings extends CompositeCard {
     normalize = new formattingSettings.ToggleSwitch({
         name: "normalize",
         displayName: "Normalize to 100%",
@@ -63,31 +79,11 @@ class CategoryAxisCardSettings extends Card {
         value: false
     });
 
-    autoRange = new formattingSettings.ToggleSwitch({
-        name: "autoRange",
-        displayName: "Auto range",
-        displayNameKey: "Visual_AutoRange",
-        value: true
-    });
-
-    start = new NullableNumUpDown({
-        name: "start",
-        displayName: "Start",
-        displayNameKey: "Visual_XAxisStart",
-        value: <number><unknown>null
-    });
-
-    end = new NullableNumUpDown({
-        name: "end",
-        displayName: "End",
-        displayNameKey: "Visual_XAxisEnd",
-        value: <number><unknown>null
-    });
-
     name: string = "categoryAxis";
-    displayName: string = "X-Axis";
+    displayName: string = "X-axis";
     displayNameKey: string = "Visual_XAxis";
-    slices = [this.normalize, this.autoRange, this.start, this.end];
+    optionsGroup = new CategoryAxisOptionsGroup(this.normalize);
+    groups: formattingSettings.Group[] = [this.optionsGroup];
 }
 
 class NegativeBarsCardSettings extends Card {
@@ -728,43 +724,67 @@ export class TornadoChartSettingsModel extends Model {
 
     public populateCategoryAxisSlice(dataPoints: TornadoChartSeries[]){
         const isNormalized = this.categoryAxis.normalize.value;
-        this.categoryAxis.slices = [this.categoryAxis.normalize];
+        this.categoryAxis.groups = [this.categoryAxis.optionsGroup];
         if (!isNormalized) {
-            for (const dataPoint of dataPoints) {
+            dataPoints.forEach((dataPoint, index) => {
                 const selector = ColorHelper.normalizeSelector(
                     dataPoint.selectionId.getSelector(),
                     false);
                 const autoRange = dataPoint.categoryAxisAutoRange
                     ?? (dataPoint.categoryAxisStart === null
                         && (dataPoint.categoryAxisEnd === null || dataPoint.categoryAxisEnd === 0));
+                const startOptions: powerbi.visuals.NumUpDownFormat | undefined = this.isValueSet(dataPoint.categoryAxisEnd)
+                    ? {
+                        maxValue: {
+                            type: powerbiVisualsApi.visuals.ValidatorType.Max,
+                            value: dataPoint.categoryAxisEnd
+                        }
+                    }
+                    : undefined;
+                const endOptions: powerbi.visuals.NumUpDownFormat | undefined = this.isValueSet(dataPoint.categoryAxisStart)
+                    ? {
+                        minValue: {
+                            type: powerbiVisualsApi.visuals.ValidatorType.Min,
+                            value: dataPoint.categoryAxisStart
+                        }
+                    }
+                    : undefined;
 
-                this.categoryAxis.slices.push(
+                this.categoryAxis.groups.push(new CategoryAxisRangeGroup(
+                    index,
+                    dataPoint.name,
+                    [
                     new formattingSettings.ToggleSwitch({
                         name: "autoRange",
-                        displayName: dataPoint.name,
-                        description: "Auto range",
-                        descriptionKey: "Visual_AutoRange",
+                        displayName: "Auto range",
+                        displayNameKey: "Visual_AutoRange",
                         value: autoRange,
                         selector
                     }),
-                    new NullableNumUpDown({
+                    new formattingSettings.NumUpDown({
                         name: "start",
                         displayName: "Start",
                         displayNameKey: "Visual_XAxisStart",
                         value: <number><unknown>dataPoint.categoryAxisStart,
                         selector,
-                        disabled: autoRange
+                        disabled: autoRange,
+                        options: startOptions
                     }),
-                    new NullableNumUpDown({
+                    new formattingSettings.NumUpDown({
                         name: "end",
                         displayName: "End",
                         displayNameKey: "Visual_XAxisEnd",
                         value: <number><unknown>(dataPoint.categoryAxisEnd ?? null),
                         selector,
-                        disabled: autoRange
+                        disabled: autoRange,
+                        options: endOptions
                     })
-                );
-            }
+                    ]));
+            });
         }
+    }
+
+    private isValueSet(value: number | null): value is number {
+        return Number.isFinite(value);
     }
 }

@@ -1319,7 +1319,7 @@ describe("TornadoChart", () => {
                 expect(normalizedLeftWidth).toBeGreaterThan(manualLeftWidth);
                 expect(normalizedRightWidth).toBeGreaterThan(manualRightWidth);
                 expect(normalizedLeftWidth).toBeCloseTo(normalizedRightWidth, 5);
-                expect((<any>visualBuilder.instance.formattingSettings.categoryAxis).slices.length).toBe(1);
+                expect((<any>visualBuilder.instance.formattingSettings.categoryAxis).groups.length).toBe(1);
 
                 (dataView.metadata.objects!).categoryAxis.normalize = false;
                 visualBuilder.updateFlushAllD3Transitions(dataView);
@@ -1420,7 +1420,7 @@ describe("TornadoChart", () => {
                 visualBuilder.updateFlushAllD3Transitions(dataView);
 
                 const firstPoint = getRenderedPoints()[0];
-                const firstEnd = (<any>visualBuilder.instance.formattingSettings.categoryAxis).slices[3];
+                const firstEnd = (<any>visualBuilder.instance.formattingSettings.categoryAxis).groups[1].slices[2];
                 expect(firstPoint.minValue).toBe(-200);
                 expect(firstPoint.maxValue).toBe(0);
                 expect(firstEnd.value).toBe(0);
@@ -1454,23 +1454,56 @@ describe("TornadoChart", () => {
                 expect(firstPoint.maxValue).toBe(200);
             });
 
+            it("falls back to the automatic series range for equal bounds", () => {
+                dataViewBuilder.valuesValue1 = [100, 200, 100, 200, 100, 200];
+                dataView = dataViewBuilder.getDataView();
+                setSeriesAxis(0, { autoRange: false, start: 100, end: 100 });
+
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const firstPoint = getRenderedPoints()[0];
+                expect(firstPoint.minValue).toBe(0);
+                expect(firstPoint.maxValue).toBe(200);
+            });
+
+            it("builds live validators from the opposite manual bound", () => {
+                setSeriesAxis(0, { autoRange: false, start: -100, end: 250 });
+
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const firstRangeSlices: any[] = (<any>visualBuilder.instance.formattingSettings.categoryAxis).groups[1].slices;
+                const firstStart = firstRangeSlices[1];
+                const firstEnd = firstRangeSlices[2];
+
+                expect(firstStart.options.maxValue.type).toBe(powerbi.visuals.ValidatorType.Max);
+                expect(firstStart.options.maxValue.value).toBe(250);
+                expect(firstEnd.options.minValue.type).toBe(powerbi.visuals.ValidatorType.Min);
+                expect(firstEnd.options.minValue.value).toBe(-100);
+            });
+
             it("builds nullable per-series range controls with Auto placeholders", () => {
                 visualBuilder.updateFlushAllD3Transitions(dataView);
 
-                const slices: any[] = (<any>visualBuilder.instance.formattingSettings.categoryAxis).slices;
-                const firstAutoRange = slices[1];
-                const firstStart = slices[2];
-                const firstEnd = slices[3];
+                const groups: any[] = (<any>visualBuilder.instance.formattingSettings.categoryAxis).groups;
+                const firstRangeGroup = groups[1];
+                const firstAutoRange = firstRangeGroup.slices[0];
+                const firstStart = firstRangeGroup.slices[1];
+                const firstEnd = firstRangeGroup.slices[2];
 
+                expect(groups[0].displayName).toBe("Options");
+                expect(firstRangeGroup.displayName).toBe(dataView.categorical!.values![0].source.displayName);
                 expect(firstAutoRange.name).toBe("autoRange");
+                expect(firstAutoRange.displayName).toBe("Auto range");
                 expect(firstAutoRange.value).toBe(true);
                 expect(firstStart.name).toBe("start");
                 expect(firstStart.value).toBeNull();
                 expect(firstStart.disabled).toBe(true);
+                expect(firstStart.options).toBeUndefined();
                 expect(firstStart.getFormattingComponent("categoryAxis").placeholderText).toBe("Auto");
                 expect(firstEnd.name).toBe("end");
                 expect(firstEnd.value).toBeNull();
                 expect(firstEnd.disabled).toBe(true);
+                expect(firstEnd.options).toBeUndefined();
                 expect(firstEnd.getFormattingComponent("categoryAxis").placeholderText).toBe("Auto");
             });
         });

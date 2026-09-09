@@ -390,9 +390,9 @@ export class TornadoChart implements IVisual {
             colors
         );
 
-        let categoryAxisAutoRange: boolean = null;
-        let categoryAxisStart: number = null;
-        let categoryAxisEnd: number = null;
+        let categoryAxisAutoRange: boolean | null = null;
+        let categoryAxisStart: number | null = null;
+        let categoryAxisEnd: number | null = null;
         const categoryAxisObject = mergedObjects.categoryAxis;
 
         if (categoryAxisObject && !Array.isArray(categoryAxisObject)) {
