@@ -187,7 +187,7 @@ export class TornadoWebBehavior {
                 this.colorHelper.isHighContrast);
             // Apply negative bars transparency for fill-opacity
             if (attributeName === "fill-opacity" && dataPoint.value < 0 && negativeBarsTransparency > 0) {
-                opacity = Math.min(opacity, 1 - negativeBarsTransparency / 100);
+                opacity *= 1 - negativeBarsTransparency / 100;
             }
             return opacity;
         });
