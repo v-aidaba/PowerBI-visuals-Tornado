@@ -1319,14 +1319,23 @@ describe("TornadoChart", () => {
                 expect(normalizedLeftWidth).toBeGreaterThan(manualLeftWidth);
                 expect(normalizedRightWidth).toBeGreaterThan(manualRightWidth);
                 expect(normalizedLeftWidth).toBeCloseTo(normalizedRightWidth, 5);
-                expect((<any>visualBuilder.instance.formattingSettings.categoryAxis).groups.length).toBe(1);
+                const normalizedRangeGroups = (<any>visualBuilder.instance.formattingSettings.categoryAxis).groups.slice(1);
+                expect(normalizedRangeGroups.length).toBe(2);
+                normalizedRangeGroups.forEach(group => {
+                    expect(group.slices.map(slice => slice.name)).toEqual(["start", "end"]);
+                    group.slices.forEach(slice => expect(slice.disabled).toBeTrue());
+                });
 
                 (dataView.metadata.objects!).categoryAxis.normalize = false;
                 visualBuilder.updateFlushAllD3Transitions(dataView);
                 const restoredPoints = getRenderedPoints();
+                const restoredRangeGroups = (<any>visualBuilder.instance.formattingSettings.categoryAxis).groups.slice(1);
 
                 expect(restoredPoints[0].width).toBeCloseTo(manualLeftWidth, 5);
                 expect(restoredPoints[seriesLength].width).toBeCloseTo(manualRightWidth, 5);
+                restoredRangeGroups.forEach(group => {
+                    group.slices.forEach(slice => expect(slice.disabled).toBeFalse());
+                });
             });
 
             it("end", () => {
@@ -1420,11 +1429,10 @@ describe("TornadoChart", () => {
                 visualBuilder.updateFlushAllD3Transitions(dataView);
 
                 const firstPoint = getRenderedPoints()[0];
-                const firstEnd = (<any>visualBuilder.instance.formattingSettings.categoryAxis).groups[1].slices[2];
+                const firstEnd = (<any>visualBuilder.instance.formattingSettings.categoryAxis).groups[1].slices[1];
                 expect(firstPoint.minValue).toBe(-200);
                 expect(firstPoint.maxValue).toBe(0);
                 expect(firstEnd.value).toBe(0);
-                expect(firstEnd.disabled).toBeFalse();
             });
 
             it("preserves legacy selector-scoped end values when autoRange is absent", () => {
@@ -1472,9 +1480,10 @@ describe("TornadoChart", () => {
                 visualBuilder.updateFlushAllD3Transitions(dataView);
 
                 const firstRangeSlices: any[] = (<any>visualBuilder.instance.formattingSettings.categoryAxis).groups[1].slices;
-                const firstStart = firstRangeSlices[1];
-                const firstEnd = firstRangeSlices[2];
+                const firstStart = firstRangeSlices[0];
+                const firstEnd = firstRangeSlices[1];
 
+                expect(firstRangeSlices.map(slice => slice.name)).toEqual(["start", "end"]);
                 expect(firstStart.options.maxValue.type).toBe(powerbi.visuals.ValidatorType.Max);
                 expect(firstStart.options.maxValue.value).toBe(250);
                 expect(firstEnd.options.minValue.type).toBe(powerbi.visuals.ValidatorType.Min);

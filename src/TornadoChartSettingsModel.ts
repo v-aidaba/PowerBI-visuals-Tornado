@@ -725,49 +725,38 @@ export class TornadoChartSettingsModel extends Model {
     public populateCategoryAxisSlice(dataPoints: TornadoChartSeries[]){
         const isNormalized = this.categoryAxis.normalize.value;
         this.categoryAxis.groups = [this.categoryAxis.optionsGroup];
-        if (!isNormalized) {
-            dataPoints.forEach((dataPoint, index) => {
-                const selector = ColorHelper.normalizeSelector(
-                    dataPoint.selectionId.getSelector(),
-                    false);
-                const autoRange = dataPoint.categoryAxisAutoRange
-                    ?? (dataPoint.categoryAxisStart === null
-                        && (dataPoint.categoryAxisEnd === null || dataPoint.categoryAxisEnd === 0));
-                const startOptions: powerbi.visuals.NumUpDownFormat | undefined = this.isValueSet(dataPoint.categoryAxisEnd)
-                    ? {
-                        maxValue: {
-                            type: powerbiVisualsApi.visuals.ValidatorType.Max,
-                            value: dataPoint.categoryAxisEnd
-                        }
+        dataPoints.forEach((dataPoint, index) => {
+            const selector = ColorHelper.normalizeSelector(
+                dataPoint.selectionId.getSelector(),
+                false);
+            const startOptions: powerbi.visuals.NumUpDownFormat | undefined = this.isValueSet(dataPoint.categoryAxisEnd)
+                ? {
+                    maxValue: {
+                        type: powerbiVisualsApi.visuals.ValidatorType.Max,
+                        value: dataPoint.categoryAxisEnd
                     }
-                    : undefined;
-                const endOptions: powerbi.visuals.NumUpDownFormat | undefined = this.isValueSet(dataPoint.categoryAxisStart)
-                    ? {
-                        minValue: {
-                            type: powerbiVisualsApi.visuals.ValidatorType.Min,
-                            value: dataPoint.categoryAxisStart
-                        }
+                }
+                : undefined;
+            const endOptions: powerbi.visuals.NumUpDownFormat | undefined = this.isValueSet(dataPoint.categoryAxisStart)
+                ? {
+                    minValue: {
+                        type: powerbiVisualsApi.visuals.ValidatorType.Min,
+                        value: dataPoint.categoryAxisStart
                     }
-                    : undefined;
+                }
+                : undefined;
 
-                this.categoryAxis.groups.push(new CategoryAxisRangeGroup(
-                    index,
-                    dataPoint.name,
-                    [
-                    new formattingSettings.ToggleSwitch({
-                        name: "autoRange",
-                        displayName: "Auto range",
-                        displayNameKey: "Visual_AutoRange",
-                        value: autoRange,
-                        selector
-                    }),
+            this.categoryAxis.groups.push(new CategoryAxisRangeGroup(
+                index,
+                dataPoint.name,
+                [
                     new formattingSettings.NumUpDown({
                         name: "start",
                         displayName: "Start",
                         displayNameKey: "Visual_XAxisStart",
                         value: <number><unknown>dataPoint.categoryAxisStart,
                         selector,
-                        disabled: autoRange,
+                        disabled: isNormalized,
                         options: startOptions
                     }),
                     new formattingSettings.NumUpDown({
@@ -776,12 +765,11 @@ export class TornadoChartSettingsModel extends Model {
                         displayNameKey: "Visual_XAxisEnd",
                         value: <number><unknown>(dataPoint.categoryAxisEnd ?? null),
                         selector,
-                        disabled: autoRange,
+                        disabled: isNormalized,
                         options: endOptions
                     })
-                    ]));
-            });
-        }
+                ]));
+        });
     }
 
     private isValueSet(value: number | null): value is number {
