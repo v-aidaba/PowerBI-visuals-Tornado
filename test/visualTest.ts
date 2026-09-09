@@ -1169,18 +1169,17 @@ describe("TornadoChart", () => {
                 };
             });
 
-            it("borderColor", (done) => {
+            it("borderColor", () => {
                 const color: string = "#CCDDEE";
                 (dataView.metadata.objects!).barAppearance.borderColor = getSolidColorStructuralObject(color);
 
-                visualBuilder.updateRenderTimeout(dataView, () => {
-                    // At least one column should render with the configured border color as its stroke
-                    const strokeMatches: boolean = Array.from(visualBuilder.columns)
-                        .some((element: Element) => areColorsEqual(
-                            getComputedStyle(element).getPropertyValue("stroke"), color));
-                    expect(strokeMatches).toBe(true);
-                    done();
-                });
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                // At least one column should render with the configured border color as its stroke
+                const strokeMatches: boolean = Array.from(visualBuilder.columns)
+                    .some((element: Element) => areColorsEqual(
+                        getComputedStyle(element).getPropertyValue("stroke"), color));
+                expect(strokeMatches).toBe(true);
             });
 
             it("borderWidth", (done) => {
