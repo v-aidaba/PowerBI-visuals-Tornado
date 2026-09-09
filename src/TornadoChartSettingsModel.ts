@@ -355,14 +355,14 @@ export enum LabelPosition {
 
 export const contentOptions: IEnumMemberWithDisplayNameKey[] = [
     { value: LabelDisplayMode.Value, displayName: "Value", key: "Visual_Value" },
-    { value: LabelDisplayMode.Percentage, displayName: "Percentage", key: "Visual_Percentage" },
+    { value: LabelDisplayMode.Percentage, displayName: "%", key: "Visual_Percentage" },
     { value: LabelDisplayMode.ValueAndPercentage, displayName: "Value (%)", key: "Visual_ValueAndPercentage" },
 ];
 
 export const dataLabelPositionOptions: IEnumMemberWithDisplayNameKey[] = [
     { value: LabelPosition.Auto, displayName: "Auto", key: "Visual_Position_Auto" },
-    { value: LabelPosition.OutsideEnd, displayName: "Outside end", key: "Visual_Position_OutsideEnd" },
     { value: LabelPosition.InsideEnd, displayName: "Inside end", key: "Visual_Position_InsideEnd" },
+    { value: LabelPosition.OutsideEnd, displayName: "Outside end", key: "Visual_Position_OutsideEnd" },
     { value: LabelPosition.InsideCenter, displayName: "Inside center", key: "Visual_Position_InsideCenter" },
     { value: LabelPosition.InsideBase, displayName: "Inside base", key: "Visual_Position_InsideBase" },
 ];
@@ -518,7 +518,7 @@ class BaseFontCardSettings extends formattingSettings.FontControl {
     public static defaultFontFamily: string = "wf_standard-font, helvetica, arial, sans-serif";
     public static minFontSize: number = 8;
     public static maxFontSize: number = 60;
-    constructor(defaultFontSize: number, settingName: string = ""){
+    constructor(defaultFontSize: number, settingName: string = "", fontFamily: string = BaseFontCardSettings.defaultFontFamily){
         super(
             new formattingSettings.FontControl({
                 name: BaseFontCardSettings.fontName + settingName,
@@ -526,11 +526,11 @@ class BaseFontCardSettings extends formattingSettings.FontControl {
                 displayNameKey: "Visual_FontControl",
                 fontFamily: new formattingSettings.FontPicker({
                     name: BaseFontCardSettings.fontFamilyName + settingName,
-                    value: BaseFontCardSettings.defaultFontFamily
+                    value: fontFamily
                 }),
                 fontSize: new formattingSettings.NumUpDown({
                     name: BaseFontCardSettings.fontSizeName + settingName,
-                    displayNameKey: "Visual_FontSize",
+                    displayNameKey: "Visual_TextSize",
                     value: defaultFontSize,
                     options: {
                         minValue: {
@@ -578,7 +578,7 @@ class LegendOptionsGroup extends Card {
 
 class LegendTextGroup extends Card {
     public defaultLabelColor: string = "";
-    public defaultFontSize: number = 8;
+    public defaultFontSize: number = 12;
 
     public labelColor = new formattingSettings.ColorPicker({
         name: "labelColor",
@@ -587,7 +587,7 @@ class LegendTextGroup extends Card {
         value: { value: this.defaultLabelColor },
     });
 
-    public font = new BaseFontCardSettings(this.defaultFontSize);
+    public font = new BaseFontCardSettings(this.defaultFontSize, "", "Segoe UI");
 
     name: string = "legendText";
     displayName: string = "Text";
@@ -630,7 +630,7 @@ export class LegendCardSettings extends CompositeCard {
 
     public show = new formattingSettings.ToggleSwitch({
         name: "show",
-        displayNameKey: "Visual_LegendShow",
+        displayNameKey: "Visual_Legend_Show",
         value: this.defaultShow,
     });
 
@@ -732,7 +732,7 @@ export class CategoryCardSettings extends CompositeCard {
     
     topLevelSlice? = this.show;
 
-    font: formattingSettings.FontControl = new BaseFontControlSettings(8);
+    font: formattingSettings.FontControl = new BaseFontControlSettings(10.5);
 
     fill = new formattingSettings.ColorPicker({
         name: "fill",
@@ -773,11 +773,11 @@ export class TornadoChartSettingsModel extends Model {
         this.dataColors,
         this.barAppearance,
         this.negativeBars,
-        this.dataLabels,
-        this.category,
-        this.categoryAxis,
-        this.legend,
         this.centerLine,
+        this.categoryAxis,
+        this.dataLabels,
+        this.legend,
+        this.category,
         this.chartArea
     ];
 

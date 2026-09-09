@@ -470,6 +470,22 @@ describe("TornadoChart", () => {
                 });
             });
 
+            it("uses default colors only when all relevant theme tokens are missing", () => {
+                const palette = visualBuilder.visualHost.colorPalette;
+                palette.foreground = { value: undefined };
+                palette.foregroundDark = { value: undefined };
+                palette.foregroundNeutralDark = { value: undefined };
+                palette.foregroundNeutralSecondary = { value: undefined };
+                palette.foregroundNeutralSecondaryAlt2 = { value: undefined };
+
+                visualBuilder.update(dataView);
+
+                const formattingSettings = visualBuilder.instance.formattingSettings;
+                expect(formattingSettings.centerLine.color.value.value).toBe("#D3D3D3");
+                expect(formattingSettings.legend.text.labelColor.value.value).toBe("#616161");
+                expect(formattingSettings.category.fill.value.value).toBe("#707070");
+            });
+
             it("does not change the configured legend placement", () => {
                 enableLegend();
                 dataView.metadata.objects = {

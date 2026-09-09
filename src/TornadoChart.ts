@@ -454,6 +454,28 @@ export class TornadoChart implements IVisual {
             || this.themeForegroundColor;
     }
 
+    private get themeCenterLineColor(): string {
+        const extendedPalette = this.colors as ISandboxExtendedColorPalette;
+        return extendedPalette.foreground?.value
+            || extendedPalette.foregroundDark?.value
+            || extendedPalette.foregroundNeutralDark?.value
+            || "#D3D3D3";
+    }
+
+    private get themeLegendTextColor(): string {
+        const extendedPalette = this.colors as ISandboxExtendedColorPalette;
+        return extendedPalette.foregroundNeutralSecondary?.value
+            || extendedPalette.foregroundNeutralSecondaryAlt2?.value
+            || "#616161";
+    }
+
+    private get themeCategoryTextColor(): string {
+        const extendedPalette = this.colors as ISandboxExtendedColorPalette;
+        return extendedPalette.foregroundNeutralSecondary?.value
+            || extendedPalette.foregroundNeutralSecondaryAlt2?.value
+            || "#707070";
+    }
+
     private get themeLabelColor(): string {
         const extendedPalette = this.colors as ISandboxExtendedColorPalette;
         return extendedPalette.foregroundNeutralSecondaryAlt?.value
@@ -468,9 +490,9 @@ export class TornadoChart implements IVisual {
             }
         };
 
-        setDefaultColor(this.formattingSettings.centerLine.color, this.themeForegroundColor);
-        setDefaultColor(this.formattingSettings.legend.text.labelColor, this.themeTextColor);
-        setDefaultColor(this.formattingSettings.category.fill, this.themeTextColor);
+        setDefaultColor(this.formattingSettings.centerLine.color, this.themeCenterLineColor);
+        setDefaultColor(this.formattingSettings.legend.text.labelColor, this.themeLegendTextColor);
+        setDefaultColor(this.formattingSettings.category.fill, this.themeCategoryTextColor);
         setDefaultColor(this.formattingSettings.dataLabels.labelsValuesGroup.insideFill, this.themeBackgroundColor);
         setDefaultColor(this.formattingSettings.dataLabels.labelsValuesGroup.outsideFill, this.themeLabelColor);
         setDefaultColor(this.formattingSettings.chartArea.backgroundColor, this.themeBackgroundColor);
