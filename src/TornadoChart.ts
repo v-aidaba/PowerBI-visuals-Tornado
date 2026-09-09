@@ -775,7 +775,7 @@ export class TornadoChart implements IVisual {
         this.chartAreaBackground
             .classed(HtmlSubSelectableClass, isSubSelectable)
             .attr(SubSelectableObjectNameAttribute, TornadoObjectNames.ChartArea)
-            .attr(SubSelectableDisplayNameAttribute, this.localizationManager.getDisplayName("Visual_ChartArea"))
+            .attr(SubSelectableDisplayNameAttribute, this.localizationManager.getDisplayName("Visual_PlotAreaBackground"))
             .attr(SubSelectableTypeAttribute, SubSelectionStylesType.Shape);
     }
 
@@ -800,8 +800,10 @@ export class TornadoChart implements IVisual {
     }
 
     private static getPrecision(labelsSettings: DataLabelSettings): number {
-        const precision: number = labelsSettings.labelsValuesGroup.labelPrecision.value;
-        return Math.min(Math.max(0, precision), TornadoChart.MaxPrecision);
+        const precision = labelsSettings.labelsValuesGroup.labelPrecision.value;
+        return Number.isFinite(precision)
+            ? Math.min(Math.max(0, precision), TornadoChart.MaxPrecision)
+            : 0;
     }
 
     private static getPercentagePrecision(labelsSettings: DataLabelSettings): number {
@@ -1475,7 +1477,7 @@ export class TornadoChart implements IVisual {
             .classed(HtmlSubSelectableClass, isFormatMode)
             .attr("pointer-events", isFormatMode ? "auto" : "none")
             .attr(SubSelectableObjectNameAttribute, TornadoObjectNames.Labels)
-            .attr(SubSelectableDisplayNameAttribute, this.localizationManager.getDisplayName("Visual_Labels"));
+            .attr(SubSelectableDisplayNameAttribute, this.localizationManager.getDisplayName("Visual_DataLabels"));
     }
 
     private renderCategories(isFormatMode: boolean): void {
@@ -1560,7 +1562,7 @@ export class TornadoChart implements IVisual {
         selection
             .classed(HtmlSubSelectableClass, isFormatMode)
             .attr(SubSelectableObjectNameAttribute, TornadoObjectNames.Categories)
-            .attr(SubSelectableDisplayNameAttribute, this.localizationManager.getDisplayName("Visual_Categories"));
+            .attr(SubSelectableDisplayNameAttribute, this.localizationManager.getDisplayName("Visual_Group"));
     }
 
     private renderLegend(isFormatMode: boolean): void {
