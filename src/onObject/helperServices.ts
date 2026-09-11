@@ -353,7 +353,7 @@ export class SubSelectionShortcutsService {
             {
                 type: VisualShortcutType.Navigate,
                 destinationInfo: { cardUid: chartAreaReferences.cardUid },
-                label: localizationManager.getDisplayName("Visual_ChartArea")
+                label: localizationManager.getDisplayName("Visual_PlotAreaBackground")
             }
         ];
     }
