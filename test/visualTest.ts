@@ -1855,6 +1855,30 @@ describe("TornadoChart", () => {
             expect(getComputedStyle(unselectedColumn).getPropertyValue("stroke-opacity")).toBe("0.4");
         });
 
+        it("combines selection opacity with partial negative bar transparency", () => {
+            visualBuilder.visualHost.colorPalette.isHighContrast = true;
+            dataViewBuilder.valuesValue1 = [-120000, -45000, 0, 45000, 120000, 60000];
+            dataViewBuilder.valuesValue2 = [0, 0, 0, 0, 0, 0];
+            dataView = dataViewBuilder.getDataView();
+            dataView.metadata.objects = {
+                negativeBars: {
+                    show: true,
+                    transparency: 50
+                }
+            };
+
+            visualBuilder.updateFlushAllD3Transitions(dataView);
+
+            const negativeColumn = Array.from(visualBuilder.columns)
+                .find((column: SVGPathElement) => (<TornadoChartPoint>(<any>column).__data__).value === -120000)!;
+            const selectedColumn = Array.from(visualBuilder.columns)
+                .find((column: SVGPathElement) => (<TornadoChartPoint>(<any>column).__data__).value === 120000)!;
+
+            d3Click(selectedColumn, 0, 0, ClickEventType.Default);
+
+            expect(parseFloat(getComputedStyle(negativeColumn).getPropertyValue("fill-opacity"))).toBeCloseTo(0.2, 5);
+        });
+
         it("column can be selected", (done) => {
             visualBuilder.updateRenderTimeout(dataView, () => {
                 const firstColumn: SVGPathElement = visualBuilder.columns[0];

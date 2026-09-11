@@ -1460,6 +1460,9 @@ export class TornadoChart implements IVisual {
         const labelSelectionMerged: Selection<TornadoChartPoint> = labelEnter.merge(labelSelection);
 
         labelSelectionMerged
+            .classed(TornadoChart.Label.className, true);
+
+        labelSelectionMerged
             .select(TornadoChart.LabelTitle.selectorName)
             .text((p: TornadoChartPoint) => isLabelHidden(p) ? "" : p.label!.source);
 
@@ -1494,9 +1497,8 @@ export class TornadoChart implements IVisual {
         }
 
         labelSelectionMerged
-            .attr("transform", (p: TornadoChartPoint, index: number) => {
-                const dy: number = (this.heightColumn + this.columnPadding) * (index % categoriesLength);
-                return translate(p.label.dx, dy + labelYOffset);
+            .attr("transform", (p: TornadoChartPoint) => {
+                return translate(p.label.dx, p.dy! + labelYOffset);
             });
 
         labelSelection
