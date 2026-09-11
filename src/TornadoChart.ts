@@ -51,8 +51,6 @@ import DataViewValueColumnGroup = powerbiVisualsApi.DataViewValueColumnGroup;
 import PrimitiveValue = powerbiVisualsApi.PrimitiveValue;
 import VisualUpdateType = powerbiVisualsApi.VisualUpdateType;
 
-import IColorPalette = powerbiVisualsApi.extensibility.IColorPalette;
-import ISandboxExtendedColorPalette = powerbiVisualsApi.extensibility.ISandboxExtendedColorPalette;
 import ILocalizationManager = powerbiVisualsApi.extensibility.ILocalizationManager;
 import IVisualEventService = powerbi.extensibility.IVisualEventService;
 
@@ -185,7 +183,7 @@ export class TornadoChart implements IVisual {
     public static converter( 
         dataView: DataView,
         hostService: IVisualHost,
-        colors: IColorPalette,
+        colorHelper: ColorHelper,
         localizationManager: ILocalizationManager,
         formattingSettings?: TornadoChartSettingsModel
     ): TornadoChartDataView {
@@ -226,7 +224,7 @@ export class TornadoChart implements IVisual {
         for (let seriesIndex = 0; seriesIndex < Math.min(values.length, TornadoChart.MaxSeries); seriesIndex++) {
             const columnGroup: DataViewValueColumnGroup = groupedValues && groupedValues.length > seriesIndex
                 && groupedValues[seriesIndex].values ? groupedValues[seriesIndex] : null;
-            const parsedSeries: TornadoChartSeries = TornadoChart.parseSeries(dataView, values, hostService, seriesIndex, hasDynamicSeries, columnGroup, colors);
+            const parsedSeries: TornadoChartSeries = TornadoChart.parseSeries(dataView, values, hostService, seriesIndex, hasDynamicSeries, columnGroup, colorHelper);
             const currentSeries: DataViewValueColumn = values[seriesIndex];
             const measureName: string = currentSeries.source.queryName;
             const automaticSeriesMin = seriesMinMax[seriesIndex]?.min ?? 0;
@@ -334,7 +332,7 @@ export class TornadoChart implements IVisual {
         index: number,
         isGrouped: boolean,
         columnGroup: DataViewValueColumnGroup,
-        colors: IColorPalette): TornadoChartSeries {
+        colorHelper: ColorHelper): TornadoChartSeries {
 
         if (!dataView) {
             return;
@@ -367,13 +365,13 @@ export class TornadoChart implements IVisual {
         const paletteKey: string = source?.groupName != null
             ? String(source.groupName)
             : queryName || source?.displayName || `series-${index}`;
-        const defaultColor: string = colors.getColor(paletteKey).value;
+        const defaultColor: string = colorHelper.getColorForSeriesValue(mergedObjects, paletteKey);
 
         const fillColor = TornadoChart.getColor(
             TornadoChart.Properties.dataPoint.fill,
             defaultColor,
             mergedObjects,
-            colors
+            colorHelper
         );
 
         let categoryAxisStart: number | null = null;
@@ -399,11 +397,9 @@ export class TornadoChart implements IVisual {
         } as TornadoChartSeries;
     }
 
-    private static getColor(properties: any, defaultColor: string, objects: DataViewObjects, colors: IColorPalette, convertToHighContrastMode: boolean = true): string {
-        const colorHelper: ColorHelper = new ColorHelper(colors, properties, defaultColor);
-
+    private static getColor(properties: any, defaultColor: string, objects: DataViewObjects, colorHelper: ColorHelper, convertToHighContrastMode: boolean = true): string {
         if (colorHelper.isHighContrast && convertToHighContrastMode)
-            return colorHelper.getColorForMeasure(objects, "", "foreground");
+            return colorHelper.getThemeColor("foreground") || defaultColor;
 
         return dataViewObjects.getFillColor(objects, properties, defaultColor);
     }
@@ -450,65 +446,56 @@ export class TornadoChart implements IVisual {
         };
     }
 
-    public colors: IColorPalette;
     public colorHelper: ColorHelper;
 
     private get themeForegroundColor(): string {
-        const extendedPalette = this.colors as ISandboxExtendedColorPalette;
-        return extendedPalette.foreground?.value
-            || extendedPalette.foregroundDark?.value
-            || extendedPalette.foregroundNeutralDark?.value
+        return this.colorHelper.getThemeColor("foreground")
+            || this.colorHelper.getThemeColor("foregroundDark")
+            || this.colorHelper.getThemeColor("foregroundNeutralDark")
             || TornadoChart.DefaultForegroundColor;
     }
 
     private get themeBackgroundColor(): string {
-        const extendedPalette = this.colors as ISandboxExtendedColorPalette;
-        return extendedPalette.background?.value
-            || extendedPalette.backgroundLight?.value
-            || extendedPalette.backgroundNeutral?.value
+        return this.colorHelper.getThemeColor("background")
+            || this.colorHelper.getThemeColor("backgroundLight")
+            || this.colorHelper.getThemeColor("backgroundNeutral")
             || TornadoChart.DefaultBackgroundColor;
     }
 
     private get themeTextColor(): string {
-        const extendedPalette = this.colors as ISandboxExtendedColorPalette;
-        return extendedPalette.foregroundNeutralSecondary?.value
-            || extendedPalette.foregroundNeutralSecondaryAlt2?.value
+        return this.colorHelper.getThemeColor("foregroundNeutralSecondary")
+            || this.colorHelper.getThemeColor("foregroundNeutralSecondaryAlt2")
             || this.themeForegroundColor;
     }
 
     private get themeCenterLineColor(): string {
-        const extendedPalette = this.colors as ISandboxExtendedColorPalette;
-        return extendedPalette.foreground?.value
-            || extendedPalette.foregroundDark?.value
-            || extendedPalette.foregroundNeutralDark?.value
+        return this.colorHelper.getThemeColor("foreground")
+            || this.colorHelper.getThemeColor("foregroundDark")
+            || this.colorHelper.getThemeColor("foregroundNeutralDark")
             || "#D3D3D3";
     }
 
     private get themeLegendTextColor(): string {
-        const extendedPalette = this.colors as ISandboxExtendedColorPalette;
-        return extendedPalette.foregroundNeutralSecondary?.value
-            || extendedPalette.foregroundNeutralSecondaryAlt2?.value
+        return this.colorHelper.getThemeColor("foregroundNeutralSecondary")
+            || this.colorHelper.getThemeColor("foregroundNeutralSecondaryAlt2")
             || "#616161";
     }
 
     private get themeCategoryTextColor(): string {
-        const extendedPalette = this.colors as ISandboxExtendedColorPalette;
-        return extendedPalette.foregroundNeutralSecondary?.value
-            || extendedPalette.foregroundNeutralSecondaryAlt2?.value
+        return this.colorHelper.getThemeColor("foregroundNeutralSecondary")
+            || this.colorHelper.getThemeColor("foregroundNeutralSecondaryAlt2")
             || "#707070";
     }
 
     private get themeBorderColor(): string {
-        const extendedPalette = this.colors as ISandboxExtendedColorPalette;
-        return extendedPalette.foregroundNeutralSecondary?.value
-            || extendedPalette.foregroundNeutralSecondaryAlt2?.value
+        return this.colorHelper.getThemeColor("foregroundNeutralSecondary")
+            || this.colorHelper.getThemeColor("foregroundNeutralSecondaryAlt2")
             || "#605E5C";
     }
 
     private get themeLabelColor(): string {
-        const extendedPalette = this.colors as ISandboxExtendedColorPalette;
-        return extendedPalette.foregroundNeutralSecondaryAlt?.value
-            || extendedPalette.foregroundNeutralSecondaryAlt2?.value
+        return this.colorHelper.getThemeColor("foregroundNeutralSecondaryAlt")
+            || this.colorHelper.getThemeColor("foregroundNeutralSecondaryAlt2")
             || this.themeTextColor;
     }
 
@@ -656,8 +643,7 @@ export class TornadoChart implements IVisual {
         this.hostService = options.host;
         this.events = options.host.eventService;
         this.localizationManager = this.hostService.createLocalizationManager();
-        this.colors = options.host.colorPalette;
-        this.colorHelper = new ColorHelper(this.colors);
+        this.colorHelper = new ColorHelper(options.host.colorPalette);
 
         this.tooltipArgs = new TooltipArgsWrapper(options.element, options.host.tooltipService);
 
@@ -741,7 +727,7 @@ export class TornadoChart implements IVisual {
             this.applyFormattingColorDefaults();
         }
 
-        this.dataView = TornadoChart.converter(dataView, this.hostService, this.colors, this.localizationManager, this.formattingSettings);
+        this.dataView = TornadoChart.converter(dataView, this.hostService, this.colorHelper, this.localizationManager, this.formattingSettings);
         if (!this.dataView || this.viewport.height < TornadoChart.CategoryMinHeight) {
             this.clearData();
             this.events.renderingFinished(options);
