@@ -67,5 +67,6 @@ export interface IChartAreaReference extends GroupFormattingModelReference {
 
 export interface ICategoryAxisReference extends GroupFormattingModelReference {
     normalize: FormattingId;
+    start: FormattingId;
     end: FormattingId;
 }

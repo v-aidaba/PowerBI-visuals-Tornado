@@ -198,6 +198,10 @@ export const categoryAxisReferences: ICategoryAxisReference = {
         objectName: TornadoObjectNames.CategoryAxis,
         propertyName: "normalize"
     },
+    start: {
+        objectName: TornadoObjectNames.CategoryAxis,
+        propertyName: "start"
+    },
     end: {
         objectName: TornadoObjectNames.CategoryAxis,
         propertyName: "end"

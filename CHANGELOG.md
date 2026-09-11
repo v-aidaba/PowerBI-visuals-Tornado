@@ -2,6 +2,9 @@
 * Fixed negative bar scaling so widths are proportional to absolute values
 * Disabled negative bars by default and added transparent fill with a visible series-colored outline
 * Kept negative data labels readable when negative bars use the default transparent fill
+* Added independent Start and End ranges with clipping for the left and right series
+* Changed the default automatic axis to a shared range and Normalize to 100% to use per-series ranges
+* Removed the redundant Auto range controls; empty Start and End values now select the automatic range
 * Added Auto, Outside end, Inside end, Inside center, and Inside base data-label position options
 * Updated default series, category, legend, axis, and data-label colors to follow the active report theme
 
