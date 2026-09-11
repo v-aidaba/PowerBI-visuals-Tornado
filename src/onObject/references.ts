@@ -198,10 +198,6 @@ export const categoryAxisReferences: ICategoryAxisReference = {
         objectName: TornadoObjectNames.CategoryAxis,
         propertyName: "normalize"
     },
-    autoRange: {
-        objectName: TornadoObjectNames.CategoryAxis,
-        propertyName: "autoRange"
-    },
     start: {
         objectName: TornadoObjectNames.CategoryAxis,
         propertyName: "start"

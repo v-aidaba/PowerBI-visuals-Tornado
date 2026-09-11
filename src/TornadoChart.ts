@@ -31,7 +31,7 @@ import {
     Selection as d3Selection 
 } from "d3-selection";
 
-import { min, max } from "d3-array";
+import { max } from "d3-array";
 
 import powerbiVisualsApi from "powerbi-visuals-api";
 
@@ -193,22 +193,19 @@ export class TornadoChart implements IVisual {
         const values: DataViewValueColumns = categorical.values;
         const category: DataViewCategoryColumn = categories[0];
         
-        // Calculate per-series min/max for normalization
+        // Normalization uses each series' magnitude range, while the default
+        // automatic range is shared by both series.
         const seriesMinMax: { min: number; max: number }[] = [];
         for (let s = 0; s < Math.min(values.length, TornadoChart.MaxSeries); s++) {
             const seriesValues = <number[]>values[s].values;
             seriesMinMax.push({
-                min: Math.min(min(seriesValues) ?? 0, 0),
-                max: Math.max(max(seriesValues) ?? 0, 0)
+                min: 0,
+                max: max(seriesValues.map(value => Number.isFinite(value) ? Math.abs(value) : 0)) ?? 0
             });
         }
-        
-        let maxValue: number = max(<number[]>values[0].values) ?? 0;
-        let minValue: number = Math.min(min(<number[]>values[0].values) ?? 0, 0);
-        if (values.length >= TornadoChart.MaxSeries) {
-            minValue = min([minValue, min(<number[]>values[1].values) ?? 0]) ?? 0;
-            maxValue = max([maxValue, max(<number[]>values[1].values) ?? 0]) ?? 0;
-        }
+
+        const minValue = 0;
+        const maxValue = max(seriesMinMax.map(range => range.max)) ?? 0;
         const labelFormatter = TornadoChart.prepareFormatter(maxValue, formattingSettings.dataLabels);
         const hasDynamicSeries: boolean = !!values.source;
         const hasHighlights: boolean = values.length > 0 && values.some(value => value.highlights && value.highlights.some(_ => _));
@@ -235,9 +232,8 @@ export class TornadoChart implements IVisual {
             const automaticSeriesMax = seriesMinMax[seriesIndex]?.max ?? 0;
             const seriesRange = TornadoChart.resolveSeriesRange(
                 parsedSeries,
-                automaticSeriesMin,
-                automaticSeriesMax,
-                minValue);
+                minValue,
+                maxValue);
 
             series.push(parsedSeries);
 
@@ -317,21 +313,10 @@ export class TornadoChart implements IVisual {
     private static resolveSeriesRange(
         series: TornadoChartSeries,
         automaticMin: number,
-        automaticMax: number,
-        legacyMin: number): { min: number; max: number } {
-
-        if (series.categoryAxisAutoRange === true) {
-            return { min: automaticMin, max: automaticMax };
-        }
+        automaticMax: number): { min: number; max: number } {
 
         const hasStart = Number.isFinite(series.categoryAxisStart);
         const hasEnd = Number.isFinite(series.categoryAxisEnd);
-
-        if (series.categoryAxisAutoRange === null && !hasStart) {
-            return hasEnd && series.categoryAxisEnd !== 0
-                ? { min: legacyMin, max: series.categoryAxisEnd! }
-                : { min: automaticMin, max: automaticMax };
-        }
 
         const minValue = hasStart ? series.categoryAxisStart! : automaticMin;
         const maxValue = hasEnd ? series.categoryAxisEnd! : automaticMax;
@@ -390,16 +375,12 @@ export class TornadoChart implements IVisual {
             colors
         );
 
-        let categoryAxisAutoRange: boolean | null = null;
         let categoryAxisStart: number | null = null;
         let categoryAxisEnd: number | null = null;
         const categoryAxisObject = mergedObjects.categoryAxis;
 
         if (categoryAxisObject && !Array.isArray(categoryAxisObject)) {
             const axis = categoryAxisObject as DataViewObject;
-            if (typeof axis.autoRange === "boolean") {
-                categoryAxisAutoRange = axis.autoRange;
-            }
             if (typeof axis.start === "number" && Number.isFinite(axis.start)) {
                 categoryAxisStart = axis.start;
             }
@@ -412,7 +393,6 @@ export class TornadoChart implements IVisual {
             fill: fillColor,
             name: displayName,
             selectionId: selectionId,
-            categoryAxisAutoRange: categoryAxisAutoRange,
             categoryAxisStart: categoryAxisStart,
             categoryAxisEnd: categoryAxisEnd
         } as TornadoChartSeries;
@@ -1141,12 +1121,12 @@ export class TornadoChart implements IVisual {
             return 0;
         }
 
-        const domainMagnitude = Math.max(Math.abs(minValue), Math.abs(maxValue));
-        if (domainMagnitude === 0) {
+        const range = maxValue - minValue;
+        if (range <= 0) {
             return 0;
         }
 
-        const columnWidth = width * Math.abs(value) / domainMagnitude;
+        const columnWidth = width * (Math.abs(value) - minValue) / range;
 
         // In case the user specifies a custom category axis end we limit the
         // column width to the maximum available width

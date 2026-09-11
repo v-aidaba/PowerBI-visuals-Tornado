@@ -57,7 +57,6 @@ export interface TornadoChartSeries {
     fill: string;
     name: string;
     selectionId: ISelectionId;
-    categoryAxisAutoRange: boolean | null;
     categoryAxisStart: number | null;
     categoryAxisEnd: number | null;
 }

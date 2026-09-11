@@ -163,11 +163,6 @@
                         "bool": true
                     }
                 },
-                "autoRange": {
-                    "type": {
-                        "bool": true
-                    }
-                },
                 "start": {
                     "placeHolderText": "Auto",
                     "type": {
