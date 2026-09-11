@@ -404,8 +404,8 @@ describe("TornadoChart", () => {
                 expect(formattingSettings.chartArea.backgroundColor.value.value).toBe(themeBackground);
                 expect(formattingSettings.barAppearance.borderColor.value.value).toBe(themeText);
                 expect(formattingSettings.negativeBars.borderColor.value.value).toBe("");
-                expect(formattingSettings.legend.text.font.fontSize.value).toBe(12);
-                expect(formattingSettings.category.font.fontSize.value).toBe(12);
+                expect(formattingSettings.legend.text.font.fontSize.value).toBe(9);
+                expect(formattingSettings.category.font.fontSize.value).toBe(9);
             });
 
             it("preserves explicit author colors over theme tokens", () => {
