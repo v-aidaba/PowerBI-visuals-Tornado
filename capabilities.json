@@ -173,7 +173,14 @@
                         "bool": true
                     }
                 },
+                "start": {
+                    "placeHolderText": "Auto",
+                    "type": {
+                        "numeric": true
+                    }
+                },
                 "end": {
+                    "placeHolderText": "Auto",
                     "type": {
                         "numeric": true
                     }
