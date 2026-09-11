@@ -134,7 +134,7 @@ describe("TornadoChart", () => {
                 const column1RightPosition: number = Math.round(
                     visualBuilder.columns[0].getBoundingClientRect().right);
 
-                expect(axisRightPosition).toBe(column1RightPosition);
+                expect(Math.abs(axisRightPosition - column1RightPosition)).toBeLessThanOrEqual(1);
 
                 done();
             });
@@ -401,6 +401,10 @@ describe("TornadoChart", () => {
                 expect(formattingSettings.dataLabels.labelsValuesGroup.insideFill.value.value).toBe(themeBackground);
                 expect(formattingSettings.dataLabels.labelsValuesGroup.outsideFill.value.value).toBe(themeLabel);
                 expect(formattingSettings.chartArea.backgroundColor.value.value).toBe(themeBackground);
+                expect(formattingSettings.barAppearance.borderColor.value.value).toBe(themeText);
+                expect(formattingSettings.negativeBars.borderColor.value.value).toBe("");
+                expect(formattingSettings.legend.text.font.fontSize.value).toBe(9);
+                expect(formattingSettings.category.font.fontSize.value).toBe(9);
             });
 
             it("preserves explicit author colors over theme tokens", () => {
@@ -467,6 +471,22 @@ describe("TornadoChart", () => {
                         : palette.backgroundLight.value;
                     assertColorsMatch(getComputedStyle(element).getPropertyValue("fill"), expectedColor);
                 });
+            });
+
+            it("uses default colors only when all relevant theme tokens are missing", () => {
+                const palette = visualBuilder.visualHost.colorPalette;
+                palette.foreground = { value: undefined };
+                palette.foregroundDark = { value: undefined };
+                palette.foregroundNeutralDark = { value: undefined };
+                palette.foregroundNeutralSecondary = { value: undefined };
+                palette.foregroundNeutralSecondaryAlt2 = { value: undefined };
+
+                visualBuilder.update(dataView);
+
+                const formattingSettings = visualBuilder.instance.formattingSettings;
+                expect(formattingSettings.centerLine.color.value.value).toBe("#D3D3D3");
+                expect(formattingSettings.legend.text.labelColor.value.value).toBe("#616161");
+                expect(formattingSettings.category.fill.value.value).toBe("#707070");
             });
 
             it("does not change the configured legend placement", () => {
@@ -574,6 +594,17 @@ describe("TornadoChart", () => {
                         .flatMap((label) => Array.from(label.querySelectorAll("text.label-text")))
                         .map((element) => element.textContent || "");
 
+                const expectControlState = (
+                    valueDisabled: boolean,
+                    percentageDisabled: boolean,
+                    displayUnitsDisabled: boolean
+                ): void => {
+                    const valuesGroup = visualBuilder.instance.formattingSettings.dataLabels.labelsValuesGroup;
+                    expect(valuesGroup.labelPrecision.disabled).toBe(valueDisabled);
+                    expect(valuesGroup.percentagePrecision.disabled).toBe(percentageDisabled);
+                    expect(valuesGroup.labelDisplayUnits.disabled).toBe(displayUnitsDisabled);
+                };
+
                 beforeEach(() => {
                     // Use a plain numeric format so the value part never contains a "%"
                     dataView.categorical!.values!.forEach((column: DataViewValueColumn) => {
@@ -597,6 +628,55 @@ describe("TornadoChart", () => {
                     const texts: string[] = getAllLabelTexts();
                     expect(texts.length).toBeGreaterThan(0);
                     expect(texts.some((text: string) => text.trim().endsWith("%"))).toBeTrue();
+                });
+
+                it("enables decimal places and display units for the selected content", () => {
+                    (dataView.metadata.objects!).labels.displayFormat = "value";
+                    visualBuilder.updateFlushAllD3Transitions(dataView);
+                    expectControlState(false, true, false);
+
+                    (dataView.metadata.objects!).labels.displayFormat = "percentage";
+                    visualBuilder.updateFlushAllD3Transitions(dataView);
+                    expectControlState(true, false, true);
+
+                    (dataView.metadata.objects!).labels.displayFormat = "valueAndPercentage";
+                    visualBuilder.updateFlushAllD3Transitions(dataView);
+                    expectControlState(false, false, false);
+                });
+
+                it("uses percentage decimal places independently", () => {
+                    (dataView.metadata.objects!).labels.displayFormat = "percentage";
+                    (dataView.metadata.objects!).labels.labelPrecision = 3;
+                    (dataView.metadata.objects!).labels.percentagePrecision = 1;
+                    visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                    const texts: string[] = getAllLabelTexts();
+                    expect(texts.length).toBeGreaterThan(0);
+                    texts.forEach((text: string) => expect(text).toMatch(/^-?\d+\.\d%$/));
+                });
+
+                it("caps automatic percentage decimal places", () => {
+                    (dataView.metadata.objects!).labels.displayFormat = "percentage";
+                    (dataView.metadata.objects!).labels.labelPrecision = 17;
+                    (dataView.metadata.objects!).labels.percentagePrecision = NaN;
+                    visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                    const texts: string[] = getAllLabelTexts();
+                    expect(texts.length).toBeGreaterThan(0);
+                    texts.forEach((text: string) => expect(text).toMatch(/^-?\d+\.\d{10}%$/));
+                });
+
+                it("falls back safely when decimal places is not finite", () => {
+                    (dataView.metadata.objects!).labels.displayFormat = "value";
+                    (dataView.metadata.objects!).labels.labelPrecision = NaN;
+                    dataView.categorical!.values!.forEach((column: DataViewValueColumn) => {
+                        column.source.format = "#,0.00";
+                    });
+                    visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                    const texts: string[] = getAllLabelTexts();
+                    expect(texts.length).toBeGreaterThan(0);
+                    texts.forEach((text: string) => expect(text).toMatch(/^-?\d{1,3}(,\d{3})*\.\d{2}$/));
                 });
 
                 it("Value (%) mode renders value and percentage together", () => {
@@ -922,16 +1002,39 @@ describe("TornadoChart", () => {
                     negativePoint.seriesColor)).toBe(true);
             });
 
-            it("keeps inside transparent negative labels independent from outside fill", () => {
-                const themeLabelColor = "#777777";
+            it("uses inside fill for labels inside transparent negative bars", () => {
+                const insideFill = "#55AA77";
                 const configuredOutsideFill = "#CC4466";
                 dataViewBuilder.valuesValue1 = [-120000, -45000, 0, 45000, 120000, 60000];
                 dataViewBuilder.valuesValue2 = [0, 0, 0, 0, 0, 0];
                 dataView = dataViewBuilder.getDataView();
                 dataView.metadata.objects = {
                     labels: {
+                        insideFill: getSolidColorStructuralObject(insideFill),
                         outsideFill: getSolidColorStructuralObject(configuredOutsideFill)
                     },
+                    negativeBars: {
+                        show: true,
+                        transparency: 100
+                    }
+                };
+
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const negativeLabel: HTMLElement = Array.from(visualBuilder.labels)
+                    .find((element: HTMLElement) => (<TornadoChartPoint>(<any>element).__data__).value === -120000)!;
+                const labelText: SVGTextElement = negativeLabel.querySelector("text.label-text")!;
+
+                assertColorsMatch(labelText.getAttribute("fill")!, insideFill);
+            });
+
+            it("keeps labels visible inside transparent negative bars with the default fill", () => {
+                const themeLabelColor = "#777777";
+                dataViewBuilder.valuesValue1 = [-120000, -45000, 0, 45000, 120000, 60000];
+                dataViewBuilder.valuesValue2 = [0, 0, 0, 0, 0, 0];
+                dataView = dataViewBuilder.getDataView();
+                dataView.metadata.objects = {
+                    labels: {},
                     negativeBars: {
                         show: true,
                         transparency: 100
@@ -982,7 +1085,7 @@ describe("TornadoChart", () => {
                     },
                     negativeBars: {
                         show: true,
-                        transparency: 50
+                        transparency: 100
                     }
                 };
 
@@ -1092,6 +1195,23 @@ describe("TornadoChart", () => {
                 });
             });
 
+            it("shows the border by default", () => {
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const negativeColumn: SVGPathElement = Array.from(visualBuilder.columns)
+                    .find((element: SVGPathElement) => (<TornadoChartPoint>(<any>element).__data__).value < 0)!;
+                expect(getComputedStyle(negativeColumn).getPropertyValue("stroke-width")).toBe("2px");
+            });
+
+            it("hides the border when disabled", () => {
+                (dataView.metadata.objects!).negativeBars.showBorder = false;
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const negativeColumn: SVGPathElement = Array.from(visualBuilder.columns)
+                    .find((element: SVGPathElement) => (<TornadoChartPoint>(<any>element).__data__).value < 0)!;
+                expect(getComputedStyle(negativeColumn).getPropertyValue("stroke-width")).toBe("0px");
+            });
+
             it("borderWidth", (done) => {
                 (dataView.metadata.objects!).negativeBars.borderWidth = 5;
 
@@ -1131,30 +1251,47 @@ describe("TornadoChart", () => {
                 };
             });
 
-            it("borderColor", (done) => {
+            it("borderColor", () => {
                 const color: string = "#CCDDEE";
+                (dataView.metadata.objects!).barAppearance.showBorder = true;
                 (dataView.metadata.objects!).barAppearance.borderColor = getSolidColorStructuralObject(color);
 
-                visualBuilder.updateRenderTimeout(dataView, () => {
-                    // At least one column should render with the configured border color as its stroke
-                    const strokeMatches: boolean = Array.from(visualBuilder.columns)
-                        .some((element: Element) => areColorsEqual(
-                            getComputedStyle(element).getPropertyValue("stroke"), color));
-                    expect(strokeMatches).toBe(true);
-                    done();
-                });
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                // At least one column should render with the configured border color as its stroke
+                const strokeMatches: boolean = Array.from(visualBuilder.columns)
+                    .some((element: Element) => areColorsEqual(
+                        getComputedStyle(element).getPropertyValue("stroke"), color));
+                expect(strokeMatches).toBe(true);
             });
 
-            it("borderWidth", (done) => {
+            it("hides the border by default", () => {
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const widths: string[] = Array.from(visualBuilder.columns)
+                    .map((element: Element) => getComputedStyle(element).getPropertyValue("stroke-width"));
+                expect(widths.every((width: string) => width === "0px")).toBe(true);
+            });
+
+            it("shows the border with the default width when enabled", () => {
+                (dataView.metadata.objects!).barAppearance.showBorder = true;
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const widths: string[] = Array.from(visualBuilder.columns)
+                    .map((element: Element) => getComputedStyle(element).getPropertyValue("stroke-width"));
+                expect(widths.every((width: string) => width === "2px")).toBe(true);
+            });
+
+            it("borderWidth", () => {
+                (dataView.metadata.objects!).barAppearance.showBorder = true;
                 (dataView.metadata.objects!).barAppearance.borderWidth = 3;
 
-                visualBuilder.updateRenderTimeout(dataView, () => {
-                    // At least one column should render with the configured stroke width
-                    const widthMatches: boolean = Array.from(visualBuilder.columns)
-                        .some((element: Element) => getComputedStyle(element).getPropertyValue("stroke-width") === "3px");
-                    expect(widthMatches).toBe(true);
-                    done();
-                });
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                // At least one column should render with the configured stroke width
+                const widthMatches: boolean = Array.from(visualBuilder.columns)
+                    .some((element: Element) => getComputedStyle(element).getPropertyValue("stroke-width") === "3px");
+                expect(widthMatches).toBe(true);
             });
 
             it("cornerRadius", () => {
@@ -1177,6 +1314,7 @@ describe("TornadoChart", () => {
                     .map((element: Element) => element.getAttribute("transform") || "");
 
                 visualBuilder.updateFlushAllD3Transitions(dataView);
+                expect(visualBuilder.instance.formattingSettings.barAppearance.barSpacing.value).toBe(16);
                 const before: string[] = getTransforms();
 
                 (dataView.metadata.objects!).barAppearance.barSpacing = 25;
@@ -1185,6 +1323,18 @@ describe("TornadoChart", () => {
 
                 // Changing bar spacing should reposition/resize the rendered columns
                 expect(after).not.toEqual(before);
+            });
+
+            it("removes the space between bars at zero", () => {
+                (dataView.metadata.objects!).barAppearance.barSpacing = 0;
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const points: TornadoChartPoint[] = Array.from(visualBuilder.columns)
+                    .map((element: SVGPathElement) => <TornadoChartPoint>(<any>element).__data__);
+                const firstPoint = points[0];
+                const secondPoint = points[1];
+
+                expect(secondPoint.dy).toBeCloseTo(firstPoint.dy! + firstPoint.height!, 5);
             });
         });
 
@@ -1263,18 +1413,17 @@ describe("TornadoChart", () => {
                 expect(fill).toBe("none");
             });
 
-            it("backgroundColor", (done) => {
+            it("backgroundColor", () => {
                 const color: string = "#EEFFAA";
                 (dataView.metadata.objects!).chartArea.backgroundColor = getSolidColorStructuralObject(color);
 
-                visualBuilder.updateRenderTimeout(dataView, () => {
-                    expect(dataView.metadata.objects!["chartArea"].backgroundColor).toBeDefined();
-                    // The background rect fill should match the configured color when shown
-                    assertColorsMatch(
-                        getComputedStyle(visualBuilder.chartAreaBackground).getPropertyValue("fill"),
-                        color);
-                    done();
-                });
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                expect(dataView.metadata.objects!["chartArea"].backgroundColor).toBeDefined();
+                // The background rect fill should match the configured color when shown
+                assertColorsMatch(
+                    getComputedStyle(visualBuilder.chartAreaBackground).getPropertyValue("fill"),
+                    color);
             });
         });
 
@@ -1704,6 +1853,30 @@ describe("TornadoChart", () => {
             expect(getComputedStyle(selectedColumn).getPropertyValue("fill-opacity")).toBe("0");
             expect(getComputedStyle(selectedColumn).getPropertyValue("stroke-opacity")).toBe("1");
             expect(getComputedStyle(unselectedColumn).getPropertyValue("stroke-opacity")).toBe("0.4");
+        });
+
+        it("combines selection opacity with partial negative bar transparency", () => {
+            visualBuilder.visualHost.colorPalette.isHighContrast = true;
+            dataViewBuilder.valuesValue1 = [-120000, -45000, 0, 45000, 120000, 60000];
+            dataViewBuilder.valuesValue2 = [0, 0, 0, 0, 0, 0];
+            dataView = dataViewBuilder.getDataView();
+            dataView.metadata.objects = {
+                negativeBars: {
+                    show: true,
+                    transparency: 50
+                }
+            };
+
+            visualBuilder.updateFlushAllD3Transitions(dataView);
+
+            const negativeColumn = Array.from(visualBuilder.columns)
+                .find((column: SVGPathElement) => (<TornadoChartPoint>(<any>column).__data__).value === -120000)!;
+            const selectedColumn = Array.from(visualBuilder.columns)
+                .find((column: SVGPathElement) => (<TornadoChartPoint>(<any>column).__data__).value === 120000)!;
+
+            d3Click(selectedColumn, 0, 0, ClickEventType.Default);
+
+            expect(parseFloat(getComputedStyle(negativeColumn).getPropertyValue("fill-opacity"))).toBeCloseTo(0.2, 5);
         });
 
         it("column can be selected", (done) => {

@@ -7,6 +7,9 @@
 * Removed the redundant Auto range controls; empty Start and End values now select the automatic range
 * Added Auto, Outside end, Inside end, Inside center, and Inside base data-label position options
 * Updated default series, category, legend, axis, and data-label colors to follow the active report theme
+* Reorganized formatting pane settings for clearer configuration
+* Added configurable decimal precision for percentage data labels
+* Updated bar spacing to be percentage-based, with 0 removing spacing and a new default of 16%
 
 ## 3.2.1.0
 * Added new translations
