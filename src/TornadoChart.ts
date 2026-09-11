@@ -365,7 +365,7 @@ export class TornadoChart implements IVisual {
         const paletteKey: string = source?.groupName != null
             ? String(source.groupName)
             : queryName || source?.displayName || `series-${index}`;
-        const defaultColor: string = colorHelper.getColorForSeriesValue(null, paletteKey);
+        const defaultColor: string = colorHelper.getColorForSeriesValue(mergedObjects, paletteKey);
 
         const fillColor = TornadoChart.getColor(
             TornadoChart.Properties.dataPoint.fill,
@@ -469,31 +469,27 @@ export class TornadoChart implements IVisual {
     }
 
     private get themeCenterLineColor(): string {
-        const extendedPalette = this.colors as ISandboxExtendedColorPalette;
-        return extendedPalette.foreground?.value
-            || extendedPalette.foregroundDark?.value
-            || extendedPalette.foregroundNeutralDark?.value
+        return this.colorHelper.getThemeColor("foreground")
+            || this.colorHelper.getThemeColor("foregroundDark")
+            || this.colorHelper.getThemeColor("foregroundNeutralDark")
             || "#D3D3D3";
     }
 
     private get themeLegendTextColor(): string {
-        const extendedPalette = this.colors as ISandboxExtendedColorPalette;
-        return extendedPalette.foregroundNeutralSecondary?.value
-            || extendedPalette.foregroundNeutralSecondaryAlt2?.value
+        return this.colorHelper.getThemeColor("foregroundNeutralSecondary")
+            || this.colorHelper.getThemeColor("foregroundNeutralSecondaryAlt2")
             || "#616161";
     }
 
     private get themeCategoryTextColor(): string {
-        const extendedPalette = this.colors as ISandboxExtendedColorPalette;
-        return extendedPalette.foregroundNeutralSecondary?.value
-            || extendedPalette.foregroundNeutralSecondaryAlt2?.value
+        return this.colorHelper.getThemeColor("foregroundNeutralSecondary")
+            || this.colorHelper.getThemeColor("foregroundNeutralSecondaryAlt2")
             || "#707070";
     }
 
     private get themeBorderColor(): string {
-        const extendedPalette = this.colors as ISandboxExtendedColorPalette;
-        return extendedPalette.foregroundNeutralSecondary?.value
-            || extendedPalette.foregroundNeutralSecondaryAlt2?.value
+        return this.colorHelper.getThemeColor("foregroundNeutralSecondary")
+            || this.colorHelper.getThemeColor("foregroundNeutralSecondaryAlt2")
             || "#605E5C";
     }
 
