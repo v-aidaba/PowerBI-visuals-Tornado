@@ -478,6 +478,13 @@ export class TornadoChart implements IVisual {
             || "#707070";
     }
 
+    private get themeBorderColor(): string {
+        const extendedPalette = this.colors as ISandboxExtendedColorPalette;
+        return extendedPalette.foregroundNeutralSecondary?.value
+            || extendedPalette.foregroundNeutralSecondaryAlt2?.value
+            || "#605E5C";
+    }
+
     private get themeLabelColor(): string {
         const extendedPalette = this.colors as ISandboxExtendedColorPalette;
         return extendedPalette.foregroundNeutralSecondaryAlt?.value
@@ -498,6 +505,7 @@ export class TornadoChart implements IVisual {
         setDefaultColor(this.formattingSettings.dataLabels.labelsValuesGroup.insideFill, this.themeBackgroundColor);
         setDefaultColor(this.formattingSettings.dataLabels.labelsValuesGroup.outsideFill, this.themeLabelColor);
         setDefaultColor(this.formattingSettings.chartArea.backgroundColor, this.themeBackgroundColor);
+        setDefaultColor(this.formattingSettings.barAppearance.borderColor, this.themeBorderColor);
     }
 
     private columnPadding: number = 5;
@@ -1045,13 +1053,11 @@ export class TornadoChart implements IVisual {
 
         columnsSelectionMerged
             .style("stroke", (p: TornadoChartPoint) => {
-                let strokeColor: string;
-                if (p.value < 0) {
-                    strokeColor = this.formattingSettings?.negativeBars?.borderColor?.value?.value || p.seriesColor;
-                } else {
-                    const borderColor = this.formattingSettings?.barAppearance?.borderColor?.value?.value;
-                    strokeColor = borderColor || this.themeForegroundColor;
-                }
+                const borderColor = p.value < 0
+                    ? this.formattingSettings?.negativeBars?.borderColor?.value?.value
+                    : this.formattingSettings?.barAppearance?.borderColor?.value?.value;
+                const strokeColor = borderColor
+                    || (p.value < 0 ? p.seriesColor || this.themeBorderColor : this.themeBorderColor);
                 return this.colorHelper.isHighContrast 
                     ? this.colorHelper.getHighContrastColor("foreground", strokeColor) 
                     : strokeColor;

@@ -596,7 +596,7 @@ class LegendOptionsGroup extends Card {
 
 class LegendTextGroup extends Card {
     public defaultLabelColor: string = "";
-    public defaultFontSize: number = 8;
+    public defaultFontSize: number = 12;
 
     public labelColor = new formattingSettings.ColorPicker({
         name: "labelColor",
@@ -750,7 +750,7 @@ export class CategoryCardSettings extends CompositeCard {
     
     topLevelSlice? = this.show;
 
-    font: formattingSettings.FontControl = new BaseFontControlSettings(8);
+    font: formattingSettings.FontControl = new BaseFontControlSettings(12);
 
     fill = new formattingSettings.ColorPicker({
         name: "fill",

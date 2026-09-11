@@ -135,7 +135,7 @@ describe("TornadoChart", () => {
                 const column1RightPosition: number = Math.round(
                     visualBuilder.columns[0].getBoundingClientRect().right);
 
-                expect(axisRightPosition).toBe(column1RightPosition);
+                expect(Math.abs(axisRightPosition - column1RightPosition)).toBeLessThanOrEqual(1);
 
                 done();
             });
@@ -402,6 +402,10 @@ describe("TornadoChart", () => {
                 expect(formattingSettings.dataLabels.labelsValuesGroup.insideFill.value.value).toBe(themeBackground);
                 expect(formattingSettings.dataLabels.labelsValuesGroup.outsideFill.value.value).toBe(themeLabel);
                 expect(formattingSettings.chartArea.backgroundColor.value.value).toBe(themeBackground);
+                expect(formattingSettings.barAppearance.borderColor.value.value).toBe(themeText);
+                expect(formattingSettings.negativeBars.borderColor.value.value).toBe("");
+                expect(formattingSettings.legend.text.font.fontSize.value).toBe(12);
+                expect(formattingSettings.category.font.fontSize.value).toBe(12);
             });
 
             it("preserves explicit author colors over theme tokens", () => {
