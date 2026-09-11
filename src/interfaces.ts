@@ -57,7 +57,8 @@ export interface TornadoChartSeries {
     fill: string;
     name: string;
     selectionId: ISelectionId;
-    categoryAxisEnd: number;
+    categoryAxisStart: number | null;
+    categoryAxisEnd: number | null;
 }
 
 export interface TornadoChartLabelFormatter {

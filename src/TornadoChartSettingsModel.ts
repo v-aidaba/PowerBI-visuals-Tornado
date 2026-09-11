@@ -43,7 +43,35 @@ class DataColorCardSettings extends Card {
     slices = [this.fill];
 }
 
-class CategoryAxisCardSettings extends Card {
+class CategoryAxisOptionsGroup extends Card {
+    constructor(normalize: formattingSettings.ToggleSwitch) {
+        super();
+        this.slices = [normalize];
+    }
+
+    name: string = "categoryAxisOptions";
+    displayName: string = "Options";
+    displayNameKey: string = "Visual_Options";
+    slices: formattingSettings.Slice[];
+}
+
+class CategoryAxisRangeGroup extends Card {
+    constructor(
+        index: number,
+        displayName: string,
+        slices: formattingSettings.Slice[]) {
+        super();
+        this.name = `categoryAxisRange${index}`;
+        this.displayName = displayName;
+        this.slices = slices;
+    }
+
+    name: string;
+    displayName: string;
+    slices: formattingSettings.Slice[];
+}
+
+class CategoryAxisCardSettings extends CompositeCard {
     normalize = new formattingSettings.ToggleSwitch({
         name: "normalize",
         displayName: "Normalize to 100%",
@@ -51,17 +79,11 @@ class CategoryAxisCardSettings extends Card {
         value: false
     });
 
-    end = new formattingSettings.NumUpDown({
-        name: "end",
-        displayName: "End",
-        displayNameKey: "Visual_XAxisEnd",
-        value: 0
-    });
-
     name: string = "categoryAxis";
-    displayName: string = "X-Axis";
+    displayName: string = "X-axis";
     displayNameKey: string = "Visual_XAxis";
-    slices = [this.normalize, this.end];
+    optionsGroup = new CategoryAxisOptionsGroup(this.normalize);
+    groups: formattingSettings.Group[] = [this.optionsGroup];
 }
 
 class NegativeBarsCardSettings extends Card {
@@ -702,20 +724,59 @@ export class TornadoChartSettingsModel extends Model {
 
     public populateCategoryAxisSlice(dataPoints: TornadoChartSeries[]){
         const isNormalized = this.categoryAxis.normalize.value;
-        this.categoryAxis.slices = [this.categoryAxis.normalize];
-        if (!isNormalized) {
-            for (const dataPoint of dataPoints) {
-                this.categoryAxis.slices.push(
+        this.categoryAxis.groups = [this.categoryAxis.optionsGroup];
+        dataPoints.forEach((dataPoint, index) => {
+            const selector = ColorHelper.normalizeSelector(
+                dataPoint.selectionId.getSelector(),
+                false);
+            const startOptions: powerbi.visuals.NumUpDownFormat = {
+                minValue: {
+                    type: powerbiVisualsApi.visuals.ValidatorType.Min,
+                    value: 0
+                },
+                ...(this.isValueSet(dataPoint.categoryAxisEnd) && dataPoint.categoryAxisEnd >= 0
+                    ? { maxValue: {
+                        type: powerbiVisualsApi.visuals.ValidatorType.Max,
+                        value: dataPoint.categoryAxisEnd
+                    } }
+                    : {})
+            };
+            const endOptions: powerbi.visuals.NumUpDownFormat = {
+                minValue: {
+                    type: powerbiVisualsApi.visuals.ValidatorType.Min,
+                    value: this.isValueSet(dataPoint.categoryAxisStart)
+                        ? Math.max(0, dataPoint.categoryAxisStart)
+                        : 0
+                }
+            };
+
+            this.categoryAxis.groups.push(new CategoryAxisRangeGroup(
+                index,
+                dataPoint.name,
+                [
+                    new formattingSettings.NumUpDown({
+                        name: "start",
+                        displayName: "Start",
+                        displayNameKey: "Visual_XAxisStart",
+                        value: <number><unknown>dataPoint.categoryAxisStart,
+                        selector,
+                        disabled: isNormalized,
+                        options: startOptions
+                    }),
                     new formattingSettings.NumUpDown({
                         name: "end",
-                        displayName: dataPoint.name,
-                        value: dataPoint.categoryAxisEnd ? dataPoint.categoryAxisEnd : 0,
-                        selector: ColorHelper.normalizeSelector(
-                            dataPoint.selectionId.getSelector(),
-                            false)
+                        displayName: "End",
+                        displayNameKey: "Visual_XAxisEnd",
+                        value: <number><unknown>(dataPoint.categoryAxisEnd ?? null),
+                        selector,
+                        disabled: isNormalized,
+                        options: endOptions
                     })
-                );
-            }
-        }
+                ]));
+        });
+    }
+
+    private isValueSet(value: number | null): value is number {
+        return Number.isFinite(value);
     }
 }
