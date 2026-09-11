@@ -1471,7 +1471,7 @@ describe("TornadoChart", () => {
             });
 
             it("preserves zero as a manual end", () => {
-                dataViewBuilder.valuesValue1 = [-100, -50, -100, -50, -100, -50];
+                dataViewBuilder.valuesValue1 = [0, -50, -100, -200, -100, -50];
                 dataView = dataViewBuilder.getDataView();
                 dataView.metadata.objects = {
                     negativeBars: { show: true },
@@ -1481,11 +1481,15 @@ describe("TornadoChart", () => {
 
                 visualBuilder.updateFlushAllD3Transitions(dataView);
 
-                const firstPoint = getRenderedPoints()[0];
+                const firstSeries = getRenderedPoints().slice(0, dataViewBuilder.valuesCategory.length);
                 const firstEnd = (<any>visualBuilder.instance.formattingSettings.categoryAxis).groups[1].slices[1];
-                expect(firstPoint.minValue).toBe(-200);
-                expect(firstPoint.maxValue).toBe(0);
+                const fullWidth = firstSeries[3].width!;
+                expect(firstSeries[0].minValue).toBe(-200);
+                expect(firstSeries[0].maxValue).toBe(0);
                 expect(firstEnd.value).toBe(0);
+                expect(firstSeries[0].width).toBe(0);
+                expect(firstSeries[1].width).toBeCloseTo(fullWidth / 4, 5);
+                expect(firstSeries[2].width).toBeCloseTo(fullWidth / 2, 5);
             });
 
             it("preserves legacy selector-scoped end values", () => {
@@ -1536,7 +1540,7 @@ describe("TornadoChart", () => {
             });
 
             it("builds live validators from the opposite manual bound", () => {
-                setSeriesAxis(0, { start: -100, end: 250 });
+                setSeriesAxis(0, { start: 100, end: 250 });
 
                 visualBuilder.updateFlushAllD3Transitions(dataView);
 
@@ -1545,10 +1549,26 @@ describe("TornadoChart", () => {
                 const firstEnd = firstRangeSlices[1];
 
                 expect(firstRangeSlices.map(slice => slice.name)).toEqual(["start", "end"]);
+                expect(firstStart.options.minValue.type).toBe(powerbi.visuals.ValidatorType.Min);
+                expect(firstStart.options.minValue.value).toBe(0);
                 expect(firstStart.options.maxValue.type).toBe(powerbi.visuals.ValidatorType.Max);
                 expect(firstStart.options.maxValue.value).toBe(250);
                 expect(firstEnd.options.minValue.type).toBe(powerbi.visuals.ValidatorType.Min);
-                expect(firstEnd.options.minValue.value).toBe(-100);
+                expect(firstEnd.options.minValue.value).toBe(100);
+            });
+
+            it("prevents negative Start and End input values", () => {
+                setSeriesAxis(0, { start: -100, end: -4 });
+
+                visualBuilder.updateFlushAllD3Transitions(dataView);
+
+                const firstRangeSlices: any[] = (<any>visualBuilder.instance.formattingSettings.categoryAxis).groups[1].slices;
+                const firstStart = firstRangeSlices[0];
+                const firstEnd = firstRangeSlices[1];
+
+                expect(firstStart.options.minValue.value).toBe(0);
+                expect(firstStart.options.maxValue).toBeUndefined();
+                expect(firstEnd.options.minValue.value).toBe(0);
             });
         });
     });

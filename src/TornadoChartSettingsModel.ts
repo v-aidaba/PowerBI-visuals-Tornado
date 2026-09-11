@@ -729,22 +729,26 @@ export class TornadoChartSettingsModel extends Model {
             const selector = ColorHelper.normalizeSelector(
                 dataPoint.selectionId.getSelector(),
                 false);
-            const startOptions: powerbi.visuals.NumUpDownFormat | undefined = this.isValueSet(dataPoint.categoryAxisEnd)
-                ? {
-                    maxValue: {
+            const startOptions: powerbi.visuals.NumUpDownFormat = {
+                minValue: {
+                    type: powerbiVisualsApi.visuals.ValidatorType.Min,
+                    value: 0
+                },
+                ...(this.isValueSet(dataPoint.categoryAxisEnd) && dataPoint.categoryAxisEnd >= 0
+                    ? { maxValue: {
                         type: powerbiVisualsApi.visuals.ValidatorType.Max,
                         value: dataPoint.categoryAxisEnd
-                    }
+                    } }
+                    : {})
+            };
+            const endOptions: powerbi.visuals.NumUpDownFormat = {
+                minValue: {
+                    type: powerbiVisualsApi.visuals.ValidatorType.Min,
+                    value: this.isValueSet(dataPoint.categoryAxisStart)
+                        ? Math.max(0, dataPoint.categoryAxisStart)
+                        : 0
                 }
-                : undefined;
-            const endOptions: powerbi.visuals.NumUpDownFormat | undefined = this.isValueSet(dataPoint.categoryAxisStart)
-                ? {
-                    minValue: {
-                        type: powerbiVisualsApi.visuals.ValidatorType.Min,
-                        value: dataPoint.categoryAxisStart
-                    }
-                }
-                : undefined;
+            };
 
             this.categoryAxis.groups.push(new CategoryAxisRangeGroup(
                 index,

@@ -1121,12 +1121,14 @@ export class TornadoChart implements IVisual {
             return 0;
         }
 
-        const range = maxValue - minValue;
+        const minimumMagnitude = Math.max(0, minValue);
+        const maximumMagnitude = Math.max(Math.abs(minValue), Math.abs(maxValue));
+        const range = maximumMagnitude - minimumMagnitude;
         if (range <= 0) {
             return 0;
         }
 
-        const columnWidth = width * (Math.abs(value) - minValue) / range;
+        const columnWidth = width * (Math.abs(value) - minimumMagnitude) / range;
 
         // In case the user specifies a custom category axis end we limit the
         // column width to the maximum available width
