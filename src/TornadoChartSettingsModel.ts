@@ -10,6 +10,9 @@ import Card = formattingSettings.SimpleCard;
 import CompositeCard = formattingSettings.CompositeCard;
 import Model = formattingSettings.Model;
 
+// Power BI represents an automatic numeric value as null, while NumUpDown.value is typed as number.
+const AutoNumericValue = null as unknown as number;
+
 import IEnumMember = powerbi.IEnumMember;
 import ILocalizationManager = powerbi.extensibility.ILocalizationManager;
 import { LegendData } from "powerbi-visuals-utils-chartutils/lib/legend/legendInterfaces";
@@ -415,7 +418,7 @@ class LabelsValuesGroup extends Card {
         name: "labelPrecision",
         displayName: "Decimal places",
         displayNameKey: "Visual_DataLabels_DecimalPlaces",
-        value:  <number><unknown>null,
+        value: AutoNumericValue,
         options: {
             minValue: {
                 type: powerbiVisualsApi.visuals.ValidatorType.Min,
@@ -432,7 +435,7 @@ class LabelsValuesGroup extends Card {
         name: "percentagePrecision",
         displayName: "Percentage decimal places",
         displayNameKey: "Visual_DataLabels_PercentageDecimalPlaces",
-        value: <number><unknown>null,
+        value: AutoNumericValue,
         options: {
             minValue: {
                 type: powerbiVisualsApi.visuals.ValidatorType.Min,

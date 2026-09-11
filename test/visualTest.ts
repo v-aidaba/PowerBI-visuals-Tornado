@@ -670,11 +670,14 @@ describe("TornadoChart", () => {
                 it("falls back safely when decimal places is not finite", () => {
                     (dataView.metadata.objects!).labels.displayFormat = "value";
                     (dataView.metadata.objects!).labels.labelPrecision = NaN;
+                    dataView.categorical!.values!.forEach((column: DataViewValueColumn) => {
+                        column.source.format = "#,0.00";
+                    });
                     visualBuilder.updateFlushAllD3Transitions(dataView);
 
                     const texts: string[] = getAllLabelTexts();
                     expect(texts.length).toBeGreaterThan(0);
-                    texts.forEach((text: string) => expect(text).not.toContain("NaN"));
+                    texts.forEach((text: string) => expect(text).toMatch(/^-?\d{1,3}(,\d{3})*\.\d{2}$/));
                 });
 
                 it("Value (%) mode renders value and percentage together", () => {

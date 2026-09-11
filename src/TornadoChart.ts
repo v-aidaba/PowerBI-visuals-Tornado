@@ -140,7 +140,6 @@ export class TornadoChart implements IVisual {
     private static HighlightedShapeFactor: number = 1;
     private static CategoryLabelMargin: number = 10;
     private static DefaultLabelSettingsDisplayUnits = 1;
-    private static DefaultLabelSettingsLabelPrecision = null;
     private static DefaultForegroundColor: string = "#000000";
     private static DefaultBackgroundColor: string = "#FFFFFF";
     private static MaxAngle: number = 180;
@@ -800,7 +799,7 @@ export class TornadoChart implements IVisual {
     }
 
     private static prepareFormatter(value: number, labelsSettings: DataLabelSettings): TornadoChartLabelFormatter {
-        const precision: number = TornadoChart.getPrecision(labelsSettings);
+        const precision = TornadoChart.getPrecision(labelsSettings);
 
         const displayUnits: number = +labelsSettings.labelsValuesGroup.labelDisplayUnits.value;
         const getLabelValueFormatter = (formatString: string) => valueFormatter.create({
@@ -814,18 +813,18 @@ export class TornadoChart implements IVisual {
         };
     }
 
-    private static getPrecision(labelsSettings: DataLabelSettings): number {
+    private static getPrecision(labelsSettings: DataLabelSettings): number | undefined {
         const precision = labelsSettings.labelsValuesGroup.labelPrecision.value;
         return Number.isFinite(precision)
             ? Math.min(Math.max(0, precision), TornadoChart.MaxPrecision)
-            : 0;
+            : undefined;
     }
 
     private static getPercentagePrecision(labelsSettings: DataLabelSettings): number {
         const precision = labelsSettings.labelsValuesGroup.percentagePrecision.value;
         return Number.isFinite(precision)
             ? Math.min(Math.max(0, precision), 10)
-            : Math.min(TornadoChart.getPrecision(labelsSettings), 10);
+            : Math.min(TornadoChart.getPrecision(labelsSettings) ?? 0, 10);
     }
 
     private static getLegendData(series: TornadoChartSeries[], hasDynamicSeries: boolean): LegendData {
