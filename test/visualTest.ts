@@ -1820,6 +1820,12 @@ describe("TornadoChart", () => {
                             .toBeTrue();
                     });
                 });
+                    const legendIcons = Array.from(visualBuilder.element.querySelectorAll(".legend path.legendIcon"));
+                    expect(legendIcons.length).withContext("legend icons should be rendered").toBeGreaterThan(0);
+                    legendIcons.forEach((element: Element) => {
+                        assertColorsMatch(getComputedStyle(element).getPropertyValue("fill"), foregroundColor);
+                        assertColorsMatch(getComputedStyle(element).getPropertyValue("stroke"), foregroundColor);
+                    });
                 Array.from(visualBuilder.axis).forEach((element: Element) => {
                     assertColorsMatch(getComputedStyle(element).getPropertyValue("stroke"), foregroundColor);
                 });

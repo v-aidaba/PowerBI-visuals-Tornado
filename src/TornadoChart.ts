@@ -1597,12 +1597,15 @@ export class TornadoChart implements IVisual {
             }
 
             const legendLabelsColor: string = legendSettings.text.labelColor.value.value || this.themeTextColor;
+            const highContrastForeground = this.colorHelper.getHighContrastColor("foreground", legendLabelsColor);
             const legendData: LegendData = {
                 title: legendSettings.title.showTitle.value ? (legendSettings.title.titleText.value || legendSettings.title.defaultTitleText) : "",
-                dataPoints: legend.dataPoints,
+                dataPoints: this.colorHelper.isHighContrast
+                    ? legend.dataPoints.map(dataPoint => ({ ...dataPoint, color: highContrastForeground }))
+                    : legend.dataPoints,
                 fontSize: legendSettings.text.font.fontSize.value,
                 fontFamily: legendSettings.text.font.fontFamily.value,
-                labelColor: this.colorHelper.isHighContrast ? this.colorHelper.getHighContrastColor("foreground", legendLabelsColor) : legendLabelsColor
+                labelColor: this.colorHelper.isHighContrast ? highContrastForeground : legendLabelsColor
             };
 
             if (this.dataView.legendObjectProperties) {
